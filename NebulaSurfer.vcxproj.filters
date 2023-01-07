@@ -45,6 +45,9 @@
     <ClCompile Include="dependencies\imgui\imgui_widgets.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
+    <ClCompile Include="dependencies\imgui\imgui_stdlib.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ssh.h">
@@ -82,6 +85,9 @@
     </ClInclude>
     <ClInclude Include="dependencies\libssh2\include\libssh2_sftp.h">
       <Filter>libssh2</Filter>
+    </ClInclude>
+    <ClInclude Include="dependencies\imgui\imgui_stdlib.h">
+      <Filter>imgui</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

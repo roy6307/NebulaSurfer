@@ -13,54 +13,41 @@
 #include <string>
 
 
+
 class SSH {
 private:
 	LIBSSH2_SESSION* session = libssh2_session_init();
+	LIBSSH2_CHANNEL* channel;
+	std::string fingerprint = "";
+	std::string userauthlist = "";
+	struct sockaddr_in sin;
+	WSADATA wsadata;
+	int ssh_socket;
+
+public:
 	std::string pathToPubKey = "";
 	std::string pathToPrivKey = "";
 	std::string username = "";
 	std::string password = "";
 	std::string host = "";
-	std::string fingerprint = "";
-	std::string userauthlist = "";
-	int ssh_socket;
 	int port;
-	int rc;
-	struct sockaddr_in sin;
-	WSADATA wsadata;
-
-public:
-	bool Set_ssh_info(std::string, std::string, std::string, std::string, std::string, int);
-	bool Init_and_establish(); // Use after Set_ssh_info().
+	bool get_channel();
+	void read(char*,long long&);
+	void read_stderr(char*, long long&);
+	void write(char*, int, long long&);
+	void write_stderr(char*, int, long long&);
 };
 
-/*
-* path: A path to *.pub key.
-* name: Username for login.
-* pwd: Password for login.
-* ht: Host address.
-* pt: Port
-*/
-bool SSH::Set_ssh_info(std::string PubPath, std::string PrivPath, std::string name, std::string pwd, std::string ht, int pt) {
-	this->pathToPubKey = PubPath;
-	this->pathToPrivKey = PrivPath;
-	this->username = name;
-	this->password = pwd;
-	this->host = ht;
-	this->port = pt;
-	return true;
-}
 
 
-bool SSH::Init_and_establish() {
+bool SSH::get_channel() {
 
 	if (WSAStartup(MAKEWORD(2, 0), &wsadata) != 0) {
 		fprintf(stderr, "WSAStartup failed\n");
 		return false;
 	}
 
-	rc = libssh2_init(0);
-	if (rc != 0) {
+	if (libssh2_init(0) != 0) {
 		fprintf(stderr, "libssh2 initialization failed\n");
 		return false;
 	}
@@ -83,25 +70,68 @@ bool SSH::Init_and_establish() {
 		return false;
 	}
 
-	this->fingerprint = libssh2_hostkey_hash(this->session, LIBSSH2_HOSTKEY_HASH_SHA1);
-
-	fprintf(stderr, "Fingerprint: ");
-	for (int i = 0; i < 20; i++) {
-		fprintf(stderr, "%02X ", (unsigned char)fingerprint[i]);
-	}
-	fprintf(stderr, "\n");
-
 	this->userauthlist = libssh2_userauth_list(this->session, this->username.c_str(), strlen(this->username.c_str()));
-	if (libssh2_userauth_publickey_fromfile(this->session, this->username.c_str(), this->pathToPubKey.c_str(), this->pathToPrivKey.c_str(), this->password.c_str())) {
-		fprintf(stderr, "\tAuthentication by public key failed!\n");
-		libssh2_session_disconnect(this->session,
-			"Normal Shutdown, Thank you for playing");
+	if (0 != libssh2_userauth_publickey_fromfile(this->session, this->username.c_str(), this->pathToPubKey.c_str(), this->pathToPrivKey.c_str(), this->password.c_str())) {
+		fprintf(stderr, "Authentication by public key failed!\n");
+		libssh2_session_disconnect(this->session, "");
 		libssh2_session_free(this->session);
-	}
+		return false;
+	} 
 	else {
-		fprintf(stderr, "\tAuthentication by public key succeeded.\n");
-		libssh2_session_disconnect(this->session,
-			"Normal Shutdown, Thank you for playing");
+		fprintf(stderr, "Authentication by public key succeeded.\n");
+	}
+
+	this->channel = libssh2_channel_open_session(this->session);
+
+	if (!this->channel) {
+		fprintf(stderr, "Unable to open a session.\n");
+		libssh2_session_disconnect(this->session, "");
+		libssh2_session_free(this->session);
+		return false;
+	}
+
+	if (libssh2_channel_request_pty(this->channel, "vanilla")) {
+		fprintf(stderr, "Failed requesting pty\n");
+		libssh2_channel_free(this->channel);
+		channel = NULL;
+	}
+
+	if (libssh2_channel_shell(this->channel)) {
+		fprintf(stderr, "Unable to request shell on allocated pty\n");
+		libssh2_session_disconnect(this->session, "");
 		libssh2_session_free(this->session);
 	}
+
+	/* At this point the shell can be interacted with using
+	* libssh2_channel_read()
+	* libssh2_channel_read_stderr()
+	* libssh2_channel_write()
+	* libssh2_channel_write_stderr()
+	*
+	* Blocking mode may be (en|dis)abled with: libssh2_channel_set_blocking()
+	* If the server send EOF, libssh2_channel_eof() will return non-0
+	* To send EOF to the server use: libssh2_channel_send_eof()
+	* A channel can be closed with: libssh2_channel_close()
+	* A channel can be freed with: libssh2_channel_free()
+	*/
+
+	fprintf(stderr, "-- All done!\n\n");
+
+	return true;
+}
+
+void SSH::read(char* res, long long &actualReadCnt) {
+	actualReadCnt = libssh2_channel_read(this->channel, res, 1024);
+}
+
+void SSH::read_stderr(char* res, long long &actualReadCnt) {
+	actualReadCnt = libssh2_channel_read_stderr(this->channel, res, 1024);
+}
+
+void SSH::write(char* buf, int bufSize, long long &actualWroteCnt) {
+	actualWroteCnt = libssh2_channel_write(this->channel, buf, bufSize);
+}
+
+void SSH::write_stderr(char* buf, int bufSize, long long &actualWroteCnt) {
+	actualWroteCnt = libssh2_channel_write_stderr(this->channel, buf, bufSize);
 }

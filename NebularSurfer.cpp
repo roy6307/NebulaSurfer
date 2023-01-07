@@ -12,6 +12,7 @@ Base source from imgui\examples\example_win32_directx9\main.cpp
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_dx9.h"
 #include "imgui/imgui_impl_win32.h"
+#include "imgui/imgui_stdlib.h"
 
 
 
@@ -89,11 +90,33 @@ int main(int, char**)
         ImGui::NewFrame();
 
         {
-            ImGui::Begin("Welcome");
-            if(ImGui::Button("Set")){
-                ssh.Set_ssh_info("pathToPubKey", "pathToPrivateKey", "username", "password", "host address", "port");
-                ssh.Init_and_establish();
+            ImGui::Begin("Main panel");
+            ImGui::Text("SSH config");
+            ImGui::InputText("Host address(ipv4)", &ssh.host);
+            ImGui::InputInt("Port", &ssh.port);
+            ImGui::InputText("Username", &ssh.username);
+            ImGui::InputText("Password", &ssh.password);
+            ImGui::InputText("Path to pub key", &ssh.pathToPubKey);
+            ImGui::InputText("Path to private Key", &ssh.pathToPrivKey);
+            
+            if (ImGui::Button("Connect"))
+                ssh.get_channel();
+
+            if (ImGui::Button("Test (After connect)")) {
+                char res[1024];
+                memset(res, '\0', 1024);
+                long long cnt;
+                ssh.read(res, cnt);
+                fprintf(stderr, "%s\n", res);
+                fprintf(stderr, "Read cnt: %lld\n", cnt);
             }
+
+            ImGui::End();
+        }
+
+        {
+            ImGui::Begin("Welcome");
+            ImGui::Text("A open-source free ssh client for Windows.\nYou can review the codes on https://github.com/roy6307/NebulaSurfer");
             ImGui::End();
         }
 
@@ -116,6 +139,8 @@ int main(int, char**)
         if (result == D3DERR_DEVICELOST && g_pd3dDevice->TestCooperativeLevel() == D3DERR_DEVICENOTRESET)
             ResetDevice();
     }
+
+    libssh2_exit();
 
     ImGui_ImplDX9_Shutdown();
     ImGui_ImplWin32_Shutdown();
