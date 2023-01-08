@@ -89,6 +89,9 @@
     <ClInclude Include="dependencies\imgui\imgui_stdlib.h">
       <Filter>imgui</Filter>
     </ClInclude>
+    <ClInclude Include="aHeaderFilewhichDefinesAStructAboutImGuiWindow.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="dependencies\imgui\LICENSE.txt">

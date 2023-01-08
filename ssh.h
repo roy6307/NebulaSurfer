@@ -32,10 +32,11 @@ public:
 	std::string host = "";
 	int port;
 	bool get_channel();
-	void read(char*,long long&);
-	void read_stderr(char*, long long&);
-	void write(char*, int, long long&);
-	void write_stderr(char*, int, long long&);
+	long long read(char*);
+	long long read_stderr(char*);
+	long long write(const char*);
+	long long write(char*, int);
+	long long write_stderr(char*, int);
 };
 
 
@@ -76,7 +77,7 @@ bool SSH::get_channel() {
 		libssh2_session_disconnect(this->session, "");
 		libssh2_session_free(this->session);
 		return false;
-	} 
+	}
 	else {
 		fprintf(stderr, "Authentication by public key succeeded.\n");
 	}
@@ -120,18 +121,44 @@ bool SSH::get_channel() {
 	return true;
 }
 
-void SSH::read(char* res, long long &actualReadCnt) {
-	actualReadCnt = libssh2_channel_read(this->channel, res, 1024);
+long long SSH::read(char* res) {
+	libssh2_channel_set_blocking(this->channel, 0);
+
+	int rc = libssh2_channel_read(this->channel, res, 32760);
+	
+	libssh2_channel_set_blocking(this->channel, 1);
+
+	return rc;
 }
 
-void SSH::read_stderr(char* res, long long &actualReadCnt) {
-	actualReadCnt = libssh2_channel_read_stderr(this->channel, res, 1024);
+long long SSH::read_stderr(char* res) {
+	libssh2_channel_set_blocking(this->channel, 0);
+
+	int rc = libssh2_channel_read_stderr(this->channel, res, 32760);
+
+	libssh2_channel_set_blocking(this->channel, 1);
+
+	return rc;
 }
 
-void SSH::write(char* buf, int bufSize, long long &actualWroteCnt) {
-	actualWroteCnt = libssh2_channel_write(this->channel, buf, bufSize);
+long long SSH::write(const char* buf) {
+	bool ended = false;
+	int idx = 0;
+	do {
+		if (buf[idx] == '\0') ended = true; // Let's find the end~
+		else idx -= -1; // Beautiful code
+	} while (ended); 
+
+	int rc = libssh2_channel_write(this->channel, buf, idx);
+	return rc;
 }
 
-void SSH::write_stderr(char* buf, int bufSize, long long &actualWroteCnt) {
-	actualWroteCnt = libssh2_channel_write_stderr(this->channel, buf, bufSize);
+long long SSH::write(char* buf, int bufSize) {
+	int rc = libssh2_channel_write(this->channel, buf, bufSize);
+	return rc;
+}
+
+long long SSH::write_stderr(char* buf, int bufSize) {
+	int rc = libssh2_channel_write_stderr(this->channel, buf, bufSize);
+	return rc;
 }

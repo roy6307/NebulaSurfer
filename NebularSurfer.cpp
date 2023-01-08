@@ -8,6 +8,7 @@ Base source from imgui\examples\example_win32_directx9\main.cpp
 #include <Windows.h>
 
 #include "ssh.h"
+#include "aHeaderFilewhichDefinesAStructAboutImGuiWindow.h"
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_dx9.h"
@@ -28,8 +29,12 @@ void ResetDevice();
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 SSH ssh;
-
-int main(int, char**)
+SSHW sshw;
+#ifdef _DEBUG
+int main(int argc, char* argv[])
+#else
+int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdLine, int nCmdShow)
+#endif
 {
     // Create application window
     // ImGui_ImplWin32_EnableDpiAwareness();
@@ -90,6 +95,12 @@ int main(int, char**)
         ImGui::NewFrame();
 
         {
+            ImGui::Begin("Welcome");
+            ImGui::Text("A open-source free ssh client for Windows.\nYou can review the codes on https://github.com/roy6307/NebulaSurfer");
+            ImGui::End();
+        }
+
+        {
             ImGui::Begin("Main panel");
             ImGui::Text("SSH config");
             ImGui::InputText("Host address(ipv4)", &ssh.host);
@@ -99,24 +110,27 @@ int main(int, char**)
             ImGui::InputText("Path to pub key", &ssh.pathToPubKey);
             ImGui::InputText("Path to private Key", &ssh.pathToPrivKey);
             
-            if (ImGui::Button("Connect"))
+            if (ImGui::Button("Connect")) {
                 ssh.get_channel();
+            }
 
             if (ImGui::Button("Test (After connect)")) {
-                char res[1024];
-                memset(res, '\0', 1024);
-                long long cnt;
-                ssh.read(res, cnt);
-                fprintf(stderr, "%s\n", res);
-                fprintf(stderr, "Read cnt: %lld\n", cnt);
+                char res[32768];
+                memset(res, '\0', 32768);
+                long long cnt = ssh.read(res);
+                
+                if (cnt > 0) {
+                    sshw.appendContent(res);
+                } else fprintf(stderr, "No data\n");
+
             }
 
             ImGui::End();
         }
 
         {
-            ImGui::Begin("Welcome");
-            ImGui::Text("A open-source free ssh client for Windows.\nYou can review the codes on https://github.com/roy6307/NebulaSurfer");
+            ImGui::Begin("SSH");
+            sshw.Render("SSH", &ssh);
             ImGui::End();
         }
 
