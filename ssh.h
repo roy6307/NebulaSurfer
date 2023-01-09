@@ -14,6 +14,7 @@
 #include <windows.h>
 
 #include <string>
+#include <regex>
 
 
 
@@ -37,7 +38,7 @@ public:
 	std::string host = "";
 	int port;
 	bool init_session();
-	void textPrint(const char*);
+	void textAppend(const char*);
 	void exec(const char*);
 	void Render(const char*);
 };
@@ -106,6 +107,8 @@ bool SSH::init_session() {
 
 	this->mainContent.append("-- Succesfully connected!\n");
 
+
+
 	char temp[4096];
 	memset(temp, '\0', 4096);
 	libssh2_channel_read(this->channel, temp, 4096);
@@ -114,7 +117,11 @@ bool SSH::init_session() {
 	memset(temp, '\0', 4096);
 	libssh2_channel_read(this->channel, temp, 4096);
 
-	this->mainContent.append(temp);
+	libssh2_session_set_blocking(this->session, 0);
+
+	this->textAppend(temp);
+
+
 
 	fprintf(stderr, "-- All done!\n\n");
 
@@ -128,41 +135,69 @@ void SSH::exec(const char* buf) {
 
 	char temp[2048];
 	memset(temp, '\0', 2048);
-	strcat_s(temp,2048, buf);
-	strcat_s(temp,2048 ,"\n"); // idk why, but without "\n" libssh2_channel_read doesn't work in way I expected.
+	sprintf_s(temp, 2048, "%s\n", buf);// idk why, but without "\n" libssh2_channel_read doesn't work in way I expected.
 
-	rc = libssh2_channel_write(channel, temp, strlen(temp));
-	//libssh2_channel_send_eof(this->channel);
+	libssh2_session_set_blocking(this->session, 1);
 
-	rc = libssh2_channel_read(channel, response, 4096);
+	rc = libssh2_channel_write(channel, temp, strlen(temp)); // write buf + \n to channel
 
-	if (rc > 0) this->mainContent.appendf("%s\n", response);
-	else fprintf(stderr, "Error %d\n", rc);
+	rc = libssh2_channel_read(channel, response, 4096);	// user input
 
+	libssh2_session_set_blocking(this->session, 0);
 }
 
 // Responsible for ANSI Escape Code interpretation and print
-void SSH::textPrint(const char* buf) {
+void SSH::textAppend(const char* data) {
 
 	//\x1b[?2004h    WTF???? What the fuck is this ANSI escape code?
+	// Okay, bracketed paste mode. I think it doesn't need for us.
 
+	char vic[4096];
+	const char* idx;
+
+	memset(vic, '\0', 4096);
+	memcpy(vic, data, strlen(data));
+
+	do {
+		idx = strstr(vic, "\x1b[?2004h");
+
+		if (idx != NULL) {
+			char tempCont[4096];
+			DWORD_PTR gap = (DWORD_PTR)idx - (DWORD_PTR)vic;
+			memset(tempCont, '\0', 4096);
+
+			memcpy(tempCont, (char*)((DWORD_PTR)idx + 8), strlen(vic) - (gap + 9));   // \x1b[?2004h  == 9 characters.
+
+			memset((char*)((DWORD_PTR)vic + gap), '\0', strlen(tempCont)+9);
+			strcat_s(vic, tempCont);
+		}
+	} while (idx != NULL);
+	
+	this->mainContent.append(vic);
 }
 
 void SSH::Render(const char* title) {
 
 	ImGui::Begin(title);
 
+	char received[2048];
+	memset(received, '\0', 2048);
+
+	int r = libssh2_channel_read(this->channel, received, 2048);
+
+	if (r > 0) this->textAppend(received);
+
 	if (ImGui::BeginChild("scrolling", ImVec2(0, -(ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing())), false, ImGuiWindowFlags_HorizontalScrollbar))
 	{
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
-		ImGui::TextUnformatted(this->mainContent.begin()); // I'll use textPrint() func because of asni escape codes.
+		ImGui::TextUnformatted(this->mainContent.begin());
 		ImGui::PopStyleVar();
 	}
 
 	ImGui::EndChild();
 
 	if (ImGui::InputText(":D  ", &this->userInput, ImGuiInputTextFlags_EnterReturnsTrue)) {
-		this->mainContent.appendf("%s\n",this->userInput.c_str());
+		this->mainContent.appendf("%s\n", this->userInput.c_str());
 		ImGui::SetItemDefaultFocus();
 		ImGui::SetKeyboardFocusHere(-1);
 		this->exec(this->userInput.c_str());
