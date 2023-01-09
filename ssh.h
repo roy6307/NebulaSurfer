@@ -2,6 +2,9 @@
 
 #define WIN32_LEAN_AND_MEAN
 
+#include "imgui/imgui.h"
+#include "imgui/imgui_stdlib.h"
+
 #include "libssh2/include/libssh2_config.h"
 #include "libssh2/include/libssh2.h"
 #include "libssh2/include/libssh2_sftp.h"
@@ -23,6 +26,8 @@ private:
 	struct sockaddr_in sin;
 	WSADATA wsadata;
 	int ssh_socket;
+	ImGuiTextBuffer mainContent;
+	std::string userInput;
 
 public:
 	std::string pathToPubKey = "";
@@ -31,17 +36,13 @@ public:
 	std::string password = "";
 	std::string host = "";
 	int port;
-	bool get_channel();
-	long long read(char*);
-	long long read_stderr(char*);
-	long long write(const char*);
-	long long write(char*, int);
-	long long write_stderr(char*, int);
+	bool init_session();
+	void textPrint(const char*);
+	void exec(const char*);
+	void Render(const char*);
 };
 
-
-
-bool SSH::get_channel() {
+bool SSH::init_session() {
 
 	if (WSAStartup(MAKEWORD(2, 0), &wsadata) != 0) {
 		fprintf(stderr, "WSAStartup failed\n");
@@ -103,62 +104,72 @@ bool SSH::get_channel() {
 		libssh2_session_free(this->session);
 	}
 
-	/* At this point the shell can be interacted with using
-	* libssh2_channel_read()
-	* libssh2_channel_read_stderr()
-	* libssh2_channel_write()
-	* libssh2_channel_write_stderr()
-	*
-	* Blocking mode may be (en|dis)abled with: libssh2_channel_set_blocking()
-	* If the server send EOF, libssh2_channel_eof() will return non-0
-	* To send EOF to the server use: libssh2_channel_send_eof()
-	* A channel can be closed with: libssh2_channel_close()
-	* A channel can be freed with: libssh2_channel_free()
-	*/
+	this->mainContent.append("-- Succesfully connected!\n");
+
+	char temp[4096];
+	memset(temp, '\0', 4096);
+	libssh2_channel_read(this->channel, temp, 4096);
+
+	this->mainContent.append(temp);
+	memset(temp, '\0', 4096);
+	libssh2_channel_read(this->channel, temp, 4096);
+
+	this->mainContent.append(temp);
 
 	fprintf(stderr, "-- All done!\n\n");
 
 	return true;
 }
 
-long long SSH::read(char* res) {
-	libssh2_channel_set_blocking(this->channel, 0);
+void SSH::exec(const char* buf) {
+	int rc;
+	char response[4096];
+	memset(response, '\0', 4096);
 
-	int rc = libssh2_channel_read(this->channel, res, 32760);
-	
-	libssh2_channel_set_blocking(this->channel, 1);
+	char temp[2048];
+	memset(temp, '\0', 2048);
+	strcat_s(temp,2048, buf);
+	strcat_s(temp,2048 ,"\n"); // idk why, but without "\n" libssh2_channel_read doesn't work in way I expected.
 
-	return rc;
+	rc = libssh2_channel_write(channel, temp, strlen(temp));
+	//libssh2_channel_send_eof(this->channel);
+
+	rc = libssh2_channel_read(channel, response, 4096);
+
+	if (rc > 0) this->mainContent.appendf("%s\n", response);
+	else fprintf(stderr, "Error %d\n", rc);
+
 }
 
-long long SSH::read_stderr(char* res) {
-	libssh2_channel_set_blocking(this->channel, 0);
+// Responsible for ANSI Escape Code interpretation and print
+void SSH::textPrint(const char* buf) {
 
-	int rc = libssh2_channel_read_stderr(this->channel, res, 32760);
+	//\x1b[?2004h    WTF???? What the fuck is this ANSI escape code?
 
-	libssh2_channel_set_blocking(this->channel, 1);
-
-	return rc;
 }
 
-long long SSH::write(const char* buf) {
-	bool ended = false;
-	int idx = 0;
-	do {
-		if (buf[idx] == '\0') ended = true; // Let's find the end~
-		else idx -= -1; // Beautiful code
-	} while (ended); 
+void SSH::Render(const char* title) {
 
-	int rc = libssh2_channel_write(this->channel, buf, idx);
-	return rc;
-}
+	ImGui::Begin(title);
 
-long long SSH::write(char* buf, int bufSize) {
-	int rc = libssh2_channel_write(this->channel, buf, bufSize);
-	return rc;
-}
+	if (ImGui::BeginChild("scrolling", ImVec2(0, -(ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing())), false, ImGuiWindowFlags_HorizontalScrollbar))
+	{
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+		ImGui::TextUnformatted(this->mainContent.begin()); // I'll use textPrint() func because of asni escape codes.
+		ImGui::PopStyleVar();
+	}
 
-long long SSH::write_stderr(char* buf, int bufSize) {
-	int rc = libssh2_channel_write_stderr(this->channel, buf, bufSize);
-	return rc;
+	ImGui::EndChild();
+
+	if (ImGui::InputText(":D  ", &this->userInput, ImGuiInputTextFlags_EnterReturnsTrue)) {
+		this->mainContent.appendf("%s\n",this->userInput.c_str());
+		ImGui::SetItemDefaultFocus();
+		ImGui::SetKeyboardFocusHere(-1);
+		this->exec(this->userInput.c_str());
+		this->userInput = "";
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Clear")) { this->mainContent.clear(); }
+
+	ImGui::End();
 }

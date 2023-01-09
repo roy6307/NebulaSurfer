@@ -145,7 +145,6 @@
     <ClCompile Include="NebularSurfer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="aHeaderFilewhichDefinesAStructAboutImGuiWindow.h" />
     <ClInclude Include="dependencies\imgui\imconfig.h" />
     <ClInclude Include="dependencies\imgui\imgui.h" />
     <ClInclude Include="dependencies\imgui\imgui_impl_dx9.h" />

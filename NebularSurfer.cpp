@@ -8,7 +8,6 @@ Base source from imgui\examples\example_win32_directx9\main.cpp
 #include <Windows.h>
 
 #include "ssh.h"
-#include "aHeaderFilewhichDefinesAStructAboutImGuiWindow.h"
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_dx9.h"
@@ -29,7 +28,6 @@ void ResetDevice();
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 SSH ssh;
-SSHW sshw;
 #ifdef _DEBUG
 int main(int argc, char* argv[])
 #else
@@ -111,18 +109,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdL
             ImGui::InputText("Path to private Key", &ssh.pathToPrivKey);
             
             if (ImGui::Button("Connect")) {
-                ssh.get_channel();
-            }
-
-            if (ImGui::Button("Test (After connect)")) {
-                char res[32768];
-                memset(res, '\0', 32768);
-                long long cnt = ssh.read(res);
-                
-                if (cnt > 0) {
-                    sshw.appendContent(res);
-                } else fprintf(stderr, "No data\n");
-
+                ssh.init_session();
             }
 
             ImGui::End();
@@ -130,7 +117,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdL
 
         {
             ImGui::Begin("SSH");
-            sshw.Render("SSH", &ssh);
+            ssh.Render("SSH");
             ImGui::End();
         }
 
