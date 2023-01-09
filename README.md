@@ -10,6 +10,7 @@
   
   ### Used libraries
   [![libssh2](https://img.shields.io/badge/%20-libssh2-green?style=for-the-badge&logo=github)](https://github.com/libssh2/libssh2)
+  [![imgui](https://img.shields.io/badge/%20-ImGui-yellow?style=for-the-badge&logo=github)](https://github.com/ocornut/imgui)
  
  ## For those who want to use it even though it's not complete
  Before use, I recommend using the library you built. [libssh2](https://github.com/libssh2/libssh2)
