@@ -15,6 +15,7 @@
 
 #include <string>
 #include <regex>
+#include <vector>
 
 
 
@@ -38,7 +39,8 @@ public:
 	std::string host = "";
 	int port;
 	bool init_session();
-	void textAppend(const char*);
+	void bpmRemove(const char*);
+	void printText();
 	void exec(const char*);
 	void Render(const char*);
 };
@@ -108,20 +110,18 @@ bool SSH::init_session() {
 	this->mainContent.append("-- Succesfully connected!\n");
 
 
+	/*
+		char temp[4096];
+		memset(temp, '\0', 4096);
+		libssh2_channel_read(this->channel, temp, 4096);
 
-	char temp[4096];
-	memset(temp, '\0', 4096);
-	libssh2_channel_read(this->channel, temp, 4096);
+		this->mainContent.append(temp);
+		memset(temp, '\0', 4096);
+		libssh2_channel_read(this->channel, temp, 4096);
 
-	this->mainContent.append(temp);
-	memset(temp, '\0', 4096);
-	libssh2_channel_read(this->channel, temp, 4096);
+	*/
 
 	libssh2_session_set_blocking(this->session, 0);
-
-	this->textAppend(temp);
-
-
 
 	fprintf(stderr, "-- All done!\n\n");
 
@@ -146,34 +146,41 @@ void SSH::exec(const char* buf) {
 	libssh2_session_set_blocking(this->session, 0);
 }
 
+void SSH::bpmRemove(const char* data) {
+	std::regex re("\x1b\\[\\?2004h");
+	std::string a = std::regex_replace(std::string(data), re, "");
+	this->mainContent.append(a.c_str());
+}
+
 // Responsible for ANSI Escape Code interpretation and print
-void SSH::textAppend(const char* data) {
+// https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797#colors--graphics-mode
+void SSH::printText() {
+	//remove codes for now on.
+	//  Don't reinvent the wheel
 
-	//\x1b[?2004h    WTF???? What the fuck is this ANSI escape code?
-	// Okay, bracketed paste mode. I think it doesn't need for us.
+	/*
+	(\x1b)(\[(\d+|\d+;\d+|\d+;\d+;\d+)m)
+	a#b#c
+	#a#b#c
+	*/
 
-	char vic[4096];
-	const char* idx;
+	if (!this->mainContent.empty()) {
 
-	memset(vic, '\0', 4096);
-	memcpy(vic, data, strlen(data));
+		std::string s(this->mainContent.Buf.Data);
 
-	do {
-		idx = strstr(vic, "\x1b[?2004h");
+		std::regex re("(\x1b)(\\[(\\d+|\\d+;\\d+|\\d+;\\d+;\\d+)m)");
+		std::string ms = std::regex_replace(s, re, "");
+		ImGui::Text(u8"%s",ms.c_str());
+		//std::sregex_token_iterator it(s.begin(), s.end(), re, -1), end;
+		//std::vector<std::string> splited(it, end);
+		//std::vector<std::string>::iterator iter;
 
-		if (idx != NULL) {
-			char tempCont[4096];
-			DWORD_PTR gap = (DWORD_PTR)idx - (DWORD_PTR)vic;
-			memset(tempCont, '\0', 4096);
+		//for (iter = splited.begin(); iter != splited.end(); iter++) {
+		//	ImGui::TextUnformatted((*iter).c_str());
+		//}
 
-			memcpy(tempCont, (char*)((DWORD_PTR)idx + 8), strlen(vic) - (gap + 9));   // \x1b[?2004h  == 9 characters.
+	}
 
-			memset((char*)((DWORD_PTR)vic + gap), '\0', strlen(tempCont)+9);
-			strcat_s(vic, tempCont);
-		}
-	} while (idx != NULL);
-	
-	this->mainContent.append(vic);
 }
 
 void SSH::Render(const char* title) {
@@ -185,12 +192,13 @@ void SSH::Render(const char* title) {
 
 	int r = libssh2_channel_read(this->channel, received, 2048);
 
-	if (r > 0) this->textAppend(received);
+	if (r > 0) this->bpmRemove(received);
 
 	if (ImGui::BeginChild("scrolling", ImVec2(0, -(ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing())), false, ImGuiWindowFlags_HorizontalScrollbar))
 	{
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
-		ImGui::TextUnformatted(this->mainContent.begin());
+		//ImGui::TextUnformatted(this->mainContent.begin());
+		this->printText();
 		ImGui::PopStyleVar();
 	}
 

@@ -134,6 +134,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="config.cpp" />
     <ClCompile Include="dependencies\imgui\imgui.cpp" />
     <ClCompile Include="dependencies\imgui\imgui_demo.cpp" />
     <ClCompile Include="dependencies\imgui\imgui_draw.cpp" />
@@ -145,6 +146,7 @@
     <ClCompile Include="NebularSurfer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="config.h" />
     <ClInclude Include="dependencies\imgui\imconfig.h" />
     <ClInclude Include="dependencies\imgui\imgui.h" />
     <ClInclude Include="dependencies\imgui\imgui_impl_dx9.h" />
@@ -157,10 +159,49 @@
     <ClInclude Include="dependencies\libssh2\include\libssh2.h" />
     <ClInclude Include="dependencies\libssh2\include\libssh2_publickey.h" />
     <ClInclude Include="dependencies\libssh2\include\libssh2_sftp.h" />
+    <ClInclude Include="dependencies\rapidjson\allocators.h" />
+    <ClInclude Include="dependencies\rapidjson\cursorstreamwrapper.h" />
+    <ClInclude Include="dependencies\rapidjson\document.h" />
+    <ClInclude Include="dependencies\rapidjson\encodedstream.h" />
+    <ClInclude Include="dependencies\rapidjson\encodings.h" />
+    <ClInclude Include="dependencies\rapidjson\error\en.h" />
+    <ClInclude Include="dependencies\rapidjson\error\error.h" />
+    <ClInclude Include="dependencies\rapidjson\filereadstream.h" />
+    <ClInclude Include="dependencies\rapidjson\filewritestream.h" />
+    <ClInclude Include="dependencies\rapidjson\fwd.h" />
+    <ClInclude Include="dependencies\rapidjson\internal\biginteger.h" />
+    <ClInclude Include="dependencies\rapidjson\internal\clzll.h" />
+    <ClInclude Include="dependencies\rapidjson\internal\diyfp.h" />
+    <ClInclude Include="dependencies\rapidjson\internal\dtoa.h" />
+    <ClInclude Include="dependencies\rapidjson\internal\ieee754.h" />
+    <ClInclude Include="dependencies\rapidjson\internal\itoa.h" />
+    <ClInclude Include="dependencies\rapidjson\internal\meta.h" />
+    <ClInclude Include="dependencies\rapidjson\internal\pow10.h" />
+    <ClInclude Include="dependencies\rapidjson\internal\regex.h" />
+    <ClInclude Include="dependencies\rapidjson\internal\stack.h" />
+    <ClInclude Include="dependencies\rapidjson\internal\strfunc.h" />
+    <ClInclude Include="dependencies\rapidjson\internal\strtod.h" />
+    <ClInclude Include="dependencies\rapidjson\internal\swap.h" />
+    <ClInclude Include="dependencies\rapidjson\istreamwrapper.h" />
+    <ClInclude Include="dependencies\rapidjson\memorybuffer.h" />
+    <ClInclude Include="dependencies\rapidjson\memorystream.h" />
+    <ClInclude Include="dependencies\rapidjson\msinttypes\inttypes.h" />
+    <ClInclude Include="dependencies\rapidjson\msinttypes\stdint.h" />
+    <ClInclude Include="dependencies\rapidjson\ostreamwrapper.h" />
+    <ClInclude Include="dependencies\rapidjson\pointer.h" />
+    <ClInclude Include="dependencies\rapidjson\prettywriter.h" />
+    <ClInclude Include="dependencies\rapidjson\rapidjson.h" />
+    <ClInclude Include="dependencies\rapidjson\reader.h" />
+    <ClInclude Include="dependencies\rapidjson\schema.h" />
+    <ClInclude Include="dependencies\rapidjson\stream.h" />
+    <ClInclude Include="dependencies\rapidjson\stringbuffer.h" />
+    <ClInclude Include="dependencies\rapidjson\uri.h" />
+    <ClInclude Include="dependencies\rapidjson\writer.h" />
     <ClInclude Include="ssh.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="dependencies\imgui\LICENSE.txt" />
+    <Text Include="dependencies\rapidjson\license.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
