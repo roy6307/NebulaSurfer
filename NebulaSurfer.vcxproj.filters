@@ -60,9 +60,6 @@
     <ClCompile Include="dependencies\imgui\imgui_stdlib.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
-    <ClCompile Include="config.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ssh.h">
@@ -103,9 +100,6 @@
     </ClInclude>
     <ClInclude Include="dependencies\imgui\imgui_stdlib.h">
       <Filter>imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="config.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="dependencies\rapidjson\allocators.h">
       <Filter>rapidjson</Filter>

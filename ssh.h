@@ -10,14 +10,21 @@
 #include "libssh2/include/libssh2_sftp.h"
 #include "libssh2/include/libssh2_publickey.h"
 
+//https://github.com/Tencent/rapidjson/issues/1575#issuecomment-1374766359
+#undef min;
+#undef max;
+
+#include "rapidjson/filereadstream.h"
+#include "rapidjson/document.h"
+
 #include <winsock2.h>
 #include <windows.h>
 
 #include <string>
 #include <regex>
 #include <vector>
-
-
+#include <iostream>
+#include <fstream>
 
 class SSH {
 private:
@@ -30,6 +37,7 @@ private:
 	int ssh_socket;
 	ImGuiTextBuffer mainContent;
 	std::string userInput;
+	rapidjson::Document d;
 
 public:
 	std::string pathToPubKey = "";
@@ -37,11 +45,14 @@ public:
 	std::string username = "";
 	std::string password = "";
 	std::string host = "";
+	std::vector<std::string> cnfList;
 	int port;
 	bool init_session();
 	void bpmRemove(const char*);
 	void printText();
 	void exec(const char*);
+	void setCnfList();
+	void LoadCnf(const char*);
 	void Render(const char*);
 };
 
@@ -136,7 +147,7 @@ void SSH::exec(const char* buf) {
 	char temp[2048];
 	memset(temp, '\0', 2048);
 	sprintf_s(temp, 2048, "%s\n", buf);// idk why, but without "\n" libssh2_channel_read doesn't work in way I expected.
-
+	fprintf(stderr, "%s\n", temp);
 	libssh2_session_set_blocking(this->session, 1);
 
 	rc = libssh2_channel_write(channel, temp, strlen(temp)); // write buf + \n to channel
@@ -183,6 +194,38 @@ void SSH::printText() {
 
 }
 
+void SSH::setCnfList() {
+
+	cnfList.clear();
+
+	FILE* fp = NULL;
+	fopen_s(&fp, "config.json", "rb");
+
+	char readBuffer[65536];
+	rapidjson::FileReadStream is(fp, readBuffer, sizeof(readBuffer));
+
+	this->d.ParseStream(is);
+
+	for (rapidjson::Value::ConstMemberIterator itr = this->d.MemberBegin();
+		itr != this->d.MemberEnd(); ++itr)
+	{
+		this->cnfList.push_back(itr->name.GetString());
+	}
+
+	fclose(fp);
+}
+
+void SSH::LoadCnf(const char* n) {
+
+	this->pathToPubKey = this->d[n]["pathToPubKey"].GetString();
+	this->pathToPrivKey = this->d[n]["pathToPrivKey"].GetString();
+	this->username = this->d[n]["username"].GetString();
+	this->password = this->d[n]["password"].GetString();
+	this->host = this->d[n]["host"].GetString();
+	this->port = this->d[n]["port"].GetInt();
+
+}
+
 void SSH::Render(const char* title) {
 
 	ImGui::Begin(title);
@@ -197,7 +240,6 @@ void SSH::Render(const char* title) {
 	if (ImGui::BeginChild("scrolling", ImVec2(0, -(ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing())), false, ImGuiWindowFlags_HorizontalScrollbar))
 	{
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
-		//ImGui::TextUnformatted(this->mainContent.begin());
 		this->printText();
 		ImGui::PopStyleVar();
 	}

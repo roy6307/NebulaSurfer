@@ -1,0 +1,18 @@
+{
+  "default": {
+    "pathToPubKey": "",
+    "pathToPrivKey": "",
+    "username": "",
+    "password": "",
+    "host": "",
+    "port": 22
+  },
+  "Sex": {
+    "pathToPubKey": "",
+    "pathToPrivKey": "",
+    "username": "",
+    "password": "",
+    "host": "6.9.7.4",
+    "port": 6974
+  }
+}
