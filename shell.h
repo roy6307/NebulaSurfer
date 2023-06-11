@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <regex>
+#include <utility>
 
 
 
@@ -39,8 +40,15 @@ ESC[2K	erase the entire line
 #define ANSI_COLOR_DEFAULT	0x0			// reset colors
 #define ANSI_COLOR_RESET	0x1			// reset all colors, text effects
 
+// https://github.com/ocornut/imgui/issues/1566
+struct AnsiStr {
+	unsigned int Fg_Col = ANSI_COLOR_WHITE;
+	unsigned int Bg_Col = ANSI_COLOR_BLACK;
+	std::string text = "";
+};
+
 namespace SHELL {
-	void parseANSICodes(const std::string&);
+	std::vector<std::pair<std::string, bool>> parseANSICodes(const std::string&);
 	void AddText(std::string);
 	void Print();
 	void Exec(const char*, LIBSSH2_CHANNEL*);

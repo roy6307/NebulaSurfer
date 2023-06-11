@@ -1,14 +1,16 @@
 #include "shell.h"
 
 #include <iostream>
+#include <sstream>
 
-static ImGuiTextBuffer TextBuf;
-static std::string UserInput="";
+static std::string CONTENT;
+static std::string UserInput = "";
 
 // Function to parse ANSI escape codes
-void SHELL::parseANSICodes(const std::string& text) {
+std::vector<std::pair<std::string, bool>> SHELL::parseANSICodes(const std::string& text) {
 	std::string parsedText;
 	std::string currentCode;
+	std::vector<std::pair<std::string, bool>> t;
 
 	bool isInCode = false;
 	for (char c : text) {
@@ -21,11 +23,19 @@ void SHELL::parseANSICodes(const std::string& text) {
 
 			// Process the parsed code
 			// Here, we are just printing the code as an example
+#if _DEBUG
+			std::cout << "Parsed text: " << parsedText.length() << std::endl;
 			std::cout << "Found ANSI code: " << currentCode << std::endl;
+#endif
+
+			if (parsedText != "") t.push_back(std::make_pair(parsedText, false));
+			if (currentCode != "") t.push_back(std::make_pair(currentCode, true));
+
+			parsedText.clear();
 			currentCode.clear();
 		}
 		else if (isInCode) {
-			currentCode += c;
+			if (c != '[') currentCode += c;
 		}
 		else {
 			parsedText += c;
@@ -33,33 +43,104 @@ void SHELL::parseANSICodes(const std::string& text) {
 	}
 
 	// Output the parsed text
-	std::cout << "Parsed text: " << parsedText << std::endl;
+#ifdef _DEBUG
+	//std::cout << "Parsed text: " << parsedText << std::endl;
+#endif
+	if (parsedText != "") t.push_back(std::make_pair(parsedText, false));
+
+	return t;
 }
 
-/*
-*
-*  Fucking Bug Is Here.
-*  I Don't Know Why.
-*  SSIBAL.
-* 
-*/
-void SHELL::AddText(std::string data) {
+std::vector<std::string> split(std::string inp, char cha) {
+	std::vector<std::string> a;
+	std::stringstream b(inp);
+	std::string c;
 
-#ifdef _DEBUG
-	if(data != "") std::cout << "HIT" << std::endl;
-#endif
+	while (getline(b, c, cha)) {
+		a.push_back(c);
+	}
+
+	return a;
+}
+
+void TestFunc(std::vector<std::pair<std::string, bool>> testingVal) {
+
+	std::vector<std::pair<std::string, bool>>::iterator iter;
+	bool colored = false;
+
+	for (iter = testingVal.begin(); iter != testingVal.end(); iter++) {
+
+		std::pair<std::string, bool> cont = *iter;
+
+		if (cont.second == true) { // color
+			//if (cont.first == "0") ImGui::PopStyleColor();
+			if (false) 1 + 1;
+			else {
+				std::vector<std::string> aaaaa = split(cont.first, ';');
+
+				for (int i = 0; i < aaaaa.size(); i++) {
+					if (aaaaa[i] == "30") {
+						ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_BLACK);
+						colored = true;
+					}
+					else if (aaaaa[i] == "31") {
+						ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_RED);
+						colored = true;
+					}
+					else if (aaaaa[i] == "32") {
+						ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_GREEN);
+						colored = true;
+					}
+					else if (aaaaa[i] == "33") {
+						ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_YELLOW);
+						colored = true;
+					}
+					else if (aaaaa[i] == "34") {
+						ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_BLUE);
+						colored = true;
+					}
+					else if (aaaaa[i] == "35") {
+						ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_MAGENTA);
+						colored = true;
+					}
+					else if (aaaaa[i] == "36") {
+						ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_CYAN);
+						colored = true;
+					}
+					else if (aaaaa[i] == "37") {
+						ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_WHITE);
+						colored = true;
+					}
+				}
+			}
+		}
+		else { // or
+			ImGui::Text(u8"%s", cont.first.c_str());
+			if (colored == true) { ImGui::PopStyleColor(); colored = false; }
+		}
+
+	}
+
+}
+
+void SHELL::AddText(std::string data) {
 
 	if (data != "") {
 		std::regex re("\x1b\\[\\?2004h");
 		std::string a = std::regex_replace(data, re, "");
-		TextBuf.append(a.c_str());
+		CONTENT += a;
 	}
 
 }
 
 void SHELL::Print() {
 
-	if (TextBuf.empty()) {
+#ifdef _DEBUG
+	if (CONTENT != "") TestFunc(SHELL::parseANSICodes(CONTENT));
+
+#endif
+
+	/*if (!TextBuf.empty()) {
 
 		std::string s(TextBuf.Buf.Data);
 
@@ -67,9 +148,13 @@ void SHELL::Print() {
 		std::string ms = std::regex_replace(s, re, "");
 		ImGui::Text(u8"%s", ms.c_str());
 
-	}
+	}*/
 
 }
+
+
+
+
 
 void SHELL::Exec(const char* buf, LIBSSH2_CHANNEL* cn) {
 	int rc = 0;
@@ -108,8 +193,8 @@ void SHELL::Render(const char* title, LIBSSH2_CHANNEL* cn) {
 		SHELL::Exec(UserInput.c_str(), cn);
 		UserInput.clear();
 	}
-	ImGui::SameLine();
-	if (ImGui::Button("Clear")) { TextBuf.clear(); }
+	//ImGui::SameLine();
+	//if (ImGui::Button("Clear")) { TextBuf.clear(); }
 
 	ImGui::End();
 }
