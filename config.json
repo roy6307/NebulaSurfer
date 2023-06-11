@@ -14,5 +14,13 @@
     "password": "",
     "host": "6.9.7.4",
     "port": 6974
+  },
+  "roy": {
+    "pathToPubKey": "C:/Users/kim/Desktop/Utils/ssh_keys/ssh-key-2022-08-22.key.pub",
+    "pathToPrivKey": "C:/Users/kim/Desktop/Utils/ssh_keys/ssh-key-2022-08-22.key",
+    "username": "ubuntu",
+    "password": "",
+    "host": "150.230.248.101",
+    "port": 22
   }
 }

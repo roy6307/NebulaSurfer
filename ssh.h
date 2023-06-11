@@ -1,3 +1,5 @@
+//https://www.libssh2.org/mail/libssh2-devel-archive-2012-01/att-0012/SmallSimpleSSH.c
+
 #pragma once
 
 #define WIN32_LEAN_AND_MEAN
@@ -29,17 +31,16 @@
 class SSH {
 private:
 	LIBSSH2_SESSION* session = libssh2_session_init();
-	LIBSSH2_CHANNEL* channel;
+	
 	std::string fingerprint = "";
 	std::string userauthlist = "";
 	struct sockaddr_in sin;
 	WSADATA wsadata;
 	int ssh_socket;
-	ImGuiTextBuffer mainContent;
-	std::string userInput;
 	rapidjson::Document d;
 
 public:
+	LIBSSH2_CHANNEL* channel;
 	std::string pathToPubKey = "";
 	std::string pathToPrivKey = "";
 	std::string username = "";
@@ -48,12 +49,10 @@ public:
 	std::vector<std::string> cnfList;
 	int port;
 	bool init_session();
-	void bpmRemove(const char*);
-	void printText();
 	void exec(const char*);
 	void setCnfList();
 	void LoadCnf(const char*);
-	void Render(const char*);
+	std::string Read();
 };
 
 bool SSH::init_session() {
@@ -78,6 +77,10 @@ bool SSH::init_session() {
 		fprintf(stderr, "failed to connect!\n");
 		return false;
 	}
+	
+	//https://stackoverflow.com/questions/17227092/how-to-make-send-non-blocking-in-winsock
+	u_long mode = 1;
+	ioctlsocket(this->ssh_socket, FIONBIO, &mode);
 
 	this->session = libssh2_session_init();
 
@@ -118,80 +121,50 @@ bool SSH::init_session() {
 		libssh2_session_free(this->session);
 	}
 
-	this->mainContent.append("-- Succesfully connected!\n");
-
-
-	/*
-		char temp[4096];
-		memset(temp, '\0', 4096);
-		libssh2_channel_read(this->channel, temp, 4096);
-
-		this->mainContent.append(temp);
-		memset(temp, '\0', 4096);
-		libssh2_channel_read(this->channel, temp, 4096);
-
-	*/
-
+	libssh2_channel_set_blocking(this->channel, 0);
 	libssh2_session_set_blocking(this->session, 0);
+
+	//this->mainContent.append("-- Succesfully connected!\n");
 
 	fprintf(stderr, "-- All done!\n\n");
 
 	return true;
 }
 
-void SSH::exec(const char* buf) {
-	int rc;
+/*void SSH::exec(const char* buf) {
+	int rc = 0;
 	char response[4096];
 	memset(response, '\0', 4096);
 
 	char temp[2048];
 	memset(temp, '\0', 2048);
-	sprintf_s(temp, 2048, "%s\n", buf);// idk why, but without "\n" libssh2_channel_read doesn't work in way I expected.
+	sprintf_s(temp, 2048, u8"%s\r\n\0", buf);// idk why, but without "\r\n\0" libssh2_channel_read doesn't work in way I expected.
 	fprintf(stderr, "%s\n", temp);
-	libssh2_session_set_blocking(this->session, 1);
 
-	rc = libssh2_channel_write(channel, temp, strlen(temp)); // write buf + \n to channel
+	int written = 0;
 
-	rc = libssh2_channel_read(channel, response, 4096);	// user input
+	do {
+		rc = libssh2_channel_write(this->channel, temp, strlen(temp));
+		written += rc;
+	} while (LIBSSH2_ERROR_EAGAIN != rc && rc > 0 && written != strlen(temp));
+}*/
 
-	libssh2_session_set_blocking(this->session, 0);
-}
+std::string SSH::Read() {
 
-void SSH::bpmRemove(const char* data) {
-	std::regex re("\x1b\\[\\?2004h");
-	std::string a = std::regex_replace(std::string(data), re, "");
-	this->mainContent.append(a.c_str());
-}
+	char received[2048];
+	std::string r = "";
+	memset(received, '\0', 2048);
 
-// Responsible for ANSI Escape Code interpretation and print
-// https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797#colors--graphics-mode
-void SSH::printText() {
-	//remove codes for now on.
-	//  Don't reinvent the wheel
+	int rc = 0;
 
-	/*
-	(\x1b)(\[(\d+|\d+;\d+|\d+;\d+;\d+)m)
-	a#b#c
-	#a#b#c
-	*/
+	do {
+		rc = libssh2_channel_read(this->channel, received, 2048);
+		r.append(received);
+		//fprintf(stdout, received);
+		memset(received, '\0', 2048);
+	} while (LIBSSH2_ERROR_EAGAIN != rc && rc > 0);
 
-	if (!this->mainContent.empty()) {
-
-		std::string s(this->mainContent.Buf.Data);
-
-		std::regex re("(\x1b)(\\[(\\d+|\\d+;\\d+|\\d+;\\d+;\\d+)m)");
-		std::string ms = std::regex_replace(s, re, "");
-		ImGui::Text(u8"%s",ms.c_str());
-		//std::sregex_token_iterator it(s.begin(), s.end(), re, -1), end;
-		//std::vector<std::string> splited(it, end);
-		//std::vector<std::string>::iterator iter;
-
-		//for (iter = splited.begin(); iter != splited.end(); iter++) {
-		//	ImGui::TextUnformatted((*iter).c_str());
-		//}
-
-	}
-
+	return r;
 }
 
 void SSH::setCnfList() {
@@ -224,37 +197,4 @@ void SSH::LoadCnf(const char* n) {
 	this->host = this->d[n]["host"].GetString();
 	this->port = this->d[n]["port"].GetInt();
 
-}
-
-void SSH::Render(const char* title) {
-
-	ImGui::Begin(title);
-
-	char received[2048];
-	memset(received, '\0', 2048);
-
-	int r = libssh2_channel_read(this->channel, received, 2048);
-
-	if (r > 0) this->bpmRemove(received);
-
-	if (ImGui::BeginChild("scrolling", ImVec2(0, -(ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing())), false, ImGuiWindowFlags_HorizontalScrollbar))
-	{
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
-		this->printText();
-		ImGui::PopStyleVar();
-	}
-
-	ImGui::EndChild();
-
-	if (ImGui::InputText(":D  ", &this->userInput, ImGuiInputTextFlags_EnterReturnsTrue)) {
-		this->mainContent.appendf("%s\n", this->userInput.c_str());
-		ImGui::SetItemDefaultFocus();
-		ImGui::SetKeyboardFocusHere(-1);
-		this->exec(this->userInput.c_str());
-		this->userInput = "";
-	}
-	ImGui::SameLine();
-	if (ImGui::Button("Clear")) { this->mainContent.clear(); }
-
-	ImGui::End();
 }

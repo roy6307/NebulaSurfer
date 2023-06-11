@@ -8,6 +8,7 @@ Base source from imgui\examples\example_win32_directx9\main.cpp
 #include <Windows.h>
 
 #include "ssh.h"
+#include "shell.h"
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_dx9.h"
@@ -61,6 +62,14 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdL
 	ImGuiIO& io = ImGui::GetIO();
 	(void)io;
 
+	ImVector<ImWchar> ranges;
+	ImFontGlyphRangesBuilder builder;
+
+	io.Fonts->AddFontFromFileTTF("fonts/NotoSansKR-Medium.otf", 16.0f, NULL, io.Fonts->GetGlyphRangesKorean());
+	//io.Fonts->AddFontFromFileTTF("fonts/NotoSansJP-Medium.otf", 16.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
+	//io.Fonts->AddFontFromFileTTF("fonts/NotoSansTC-Medium.otf", 16.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+	//io.Fonts->Build();
+
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
 	// ImGui::StyleColorsLight();
@@ -100,7 +109,8 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdL
 			ImGui::Text("A open-source free ssh client for Windows.\nYou can review the codes on https://github.com/roy6307/NebulaSurfer");
 			ImGui::End();
 		}
-
+		//ImU32
+		//ImColor
 		{
 			ImGui::Begin("Main panel");
 			ImGui::Text("SSH config");
@@ -146,8 +156,13 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdL
 		}
 
 		{
+			std::string st;
+			st.clear();
+			st = ssh.Read();
+			//std::cout << st;
+			SHELL::AddText(st);
 			ImGui::Begin("SSH");
-			ssh.Render("SSH");
+			SHELL::Render("SSH", ssh.channel);
 			ImGui::End();
 		}
 

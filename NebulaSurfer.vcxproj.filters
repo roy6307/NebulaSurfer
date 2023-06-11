@@ -60,6 +60,9 @@
     <ClCompile Include="dependencies\imgui\imgui_stdlib.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
+    <ClCompile Include="shell.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ssh.h">
@@ -214,6 +217,9 @@
     </ClInclude>
     <ClInclude Include="dependencies\rapidjson\msinttypes\stdint.h">
       <Filter>rapidjson\msinttypes</Filter>
+    </ClInclude>
+    <ClInclude Include="shell.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
