@@ -159,7 +159,9 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdL
 			std::string st;
 			st.clear();
 			st = ssh.Read();
-			//std::cout << st;
+			if (st != "") {
+				std::cout << "c: " << st;
+			}
 			SHELL::AddText(st);
 			ImGui::Begin("SSH");
 			SHELL::Render("SSH", ssh.channel);

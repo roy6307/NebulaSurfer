@@ -9,7 +9,8 @@
 #include <vector>
 #include <regex>
 #include <utility>
-
+#include <iostream>
+#include <sstream>
 
 
 #define ESC '\033'
@@ -50,7 +51,7 @@ struct AnsiStr {
 namespace SHELL {
 	std::vector<std::pair<std::string, bool>> parseANSICodes(const std::string&);
 	void AddText(std::string);
-	void Print();
+	void Print(std::vector<std::pair<std::string, bool>>);
 	void Exec(const char*, LIBSSH2_CHANNEL*);
 	void Render(const char*, LIBSSH2_CHANNEL*);
 }

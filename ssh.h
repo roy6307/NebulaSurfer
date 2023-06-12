@@ -161,6 +161,7 @@ std::string SSH::Read() {
 		rc = libssh2_channel_read(this->channel, received, 2048);
 		r.append(received);
 		//fprintf(stdout, received);
+		//if(r!="")std::cout << r << std::endl;
 		memset(received, '\0', 2048);
 	} while (LIBSSH2_ERROR_EAGAIN != rc && rc > 0);
 
