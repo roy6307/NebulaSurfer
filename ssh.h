@@ -31,7 +31,7 @@
 class SSH {
 private:
 	LIBSSH2_SESSION* session = libssh2_session_init();
-	
+
 	std::string fingerprint = "";
 	std::string userauthlist = "";
 	struct sockaddr_in sin;
@@ -48,14 +48,14 @@ public:
 	std::string host = "";
 	std::vector<std::string> cnfList;
 	int port;
-	bool init_session();
+	bool init_session(const int);
 	void exec(const char*);
 	void setCnfList();
 	void LoadCnf(const char*);
 	std::string Read();
 };
 
-bool SSH::init_session() {
+bool SSH::init_session(const int LOption) {
 
 	if (WSAStartup(MAKEWORD(2, 0), &wsadata) != 0) {
 		fprintf(stderr, "WSAStartup failed\n");
@@ -77,7 +77,7 @@ bool SSH::init_session() {
 		fprintf(stderr, "failed to connect!\n");
 		return false;
 	}
-	
+
 	//https://stackoverflow.com/questions/17227092/how-to-make-send-non-blocking-in-winsock
 	u_long mode = 1;
 	ioctlsocket(this->ssh_socket, FIONBIO, &mode);
@@ -90,15 +90,36 @@ bool SSH::init_session() {
 	}
 
 	this->userauthlist = libssh2_userauth_list(this->session, this->username.c_str(), strlen(this->username.c_str()));
-	if (0 != libssh2_userauth_publickey_fromfile(this->session, this->username.c_str(), this->pathToPubKey.c_str(), this->pathToPrivKey.c_str(), this->password.c_str())) {
-		fprintf(stderr, "Authentication by public key failed!\n");
-		libssh2_session_disconnect(this->session, "");
-		libssh2_session_free(this->session);
-		return false;
+
+	if (LOption == 0) {
+
+		int rc = 0;
+		while ((rc = libssh2_userauth_password(this->session, this->username.c_str(), this->password.c_str())) == LIBSSH2_ERROR_EAGAIN);
+		if (rc) {
+			fprintf(stderr, "Authentication by password failed!\n");
+			libssh2_session_disconnect(this->session, "");
+			libssh2_session_free(this->session);
+			return false;
+		}
+
+		fprintf(stderr, "Authentication by password succeeded.\n");
+
 	}
 	else {
+
+		int rc = 0;
+		while ((rc = libssh2_userauth_publickey_fromfile(this->session, this->username.c_str(), this->pathToPubKey.c_str(), this->pathToPrivKey.c_str(), this->password.c_str())) == LIBSSH2_ERROR_EAGAIN);
+		if (rc) {
+			fprintf(stderr, "Authentication by public key failed!\n");
+			libssh2_session_disconnect(this->session, "");
+			libssh2_session_free(this->session);
+			return false;
+		}
+
 		fprintf(stderr, "Authentication by public key succeeded.\n");
+
 	}
+
 
 	this->channel = libssh2_channel_open_session(this->session);
 
@@ -124,30 +145,10 @@ bool SSH::init_session() {
 	libssh2_channel_set_blocking(this->channel, 0);
 	libssh2_session_set_blocking(this->session, 0);
 
-	//this->mainContent.append("-- Succesfully connected!\n");
-
 	fprintf(stderr, "-- All done!\n\n");
 
 	return true;
 }
-
-/*void SSH::exec(const char* buf) {
-	int rc = 0;
-	char response[4096];
-	memset(response, '\0', 4096);
-
-	char temp[2048];
-	memset(temp, '\0', 2048);
-	sprintf_s(temp, 2048, u8"%s\r\n\0", buf);// idk why, but without "\r\n\0" libssh2_channel_read doesn't work in way I expected.
-	fprintf(stderr, "%s\n", temp);
-
-	int written = 0;
-
-	do {
-		rc = libssh2_channel_write(this->channel, temp, strlen(temp));
-		written += rc;
-	} while (LIBSSH2_ERROR_EAGAIN != rc && rc > 0 && written != strlen(temp));
-}*/
 
 std::string SSH::Read() {
 
@@ -160,8 +161,6 @@ std::string SSH::Read() {
 	do {
 		rc = libssh2_channel_read(this->channel, received, 2048);
 		r.append(received);
-		//fprintf(stdout, received);
-		//if(r!="")std::cout << r << std::endl;
 		memset(received, '\0', 2048);
 	} while (LIBSSH2_ERROR_EAGAIN != rc && rc > 0);
 
@@ -175,7 +174,7 @@ void SSH::setCnfList() {
 	FILE* fp = NULL;
 	fopen_s(&fp, "config.json", "rb");
 
-	char readBuffer[65536];
+	char readBuffer[30000];
 	rapidjson::FileReadStream is(fp, readBuffer, sizeof(readBuffer));
 
 	this->d.ParseStream(is);

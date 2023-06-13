@@ -63,53 +63,28 @@ void SHELL::Print(std::vector<std::pair<std::string, bool>> testingVal) {
 			std::vector<std::string> aaaaa = split(cont.first, ';');
 
 			for (int i = 0; i < aaaaa.size(); i++) {
-				if (aaaaa[i] == "30") {
-					ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_BLACK);
-					//ImGui::SameLine();
-					colored = true;
-				}
-				else if (aaaaa[i] == "31") {
-					ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_RED);
-					//ImGui::SameLine();
-					colored = true;
-				}
-				else if (aaaaa[i] == "32") {
-					ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_GREEN);
-					//ImGui::SameLine();
-					colored = true;
-				}
-				else if (aaaaa[i] == "33") {
-					ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_YELLOW);
-					//ImGui::SameLine();
-					colored = true;
-				}
-				else if (aaaaa[i] == "34") {
-					ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_BLUE);
-					//ImGui::SameLine();
-					colored = true;
-				}
-				else if (aaaaa[i] == "35") {
-					ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_MAGENTA);
-					//ImGui::SameLine();
-					colored = true;
-				}
-				else if (aaaaa[i] == "36") {
-					ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_CYAN);
-					//ImGui::SameLine();
-					colored = true;
-				}
-				else if (aaaaa[i] == "37") {
-					ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_WHITE);
-					//ImGui::SameLine();
-					colored = true;
-				}
+
+				if (aaaaa[i] == "30") { ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_BLACK); colored = true; }
+				else if (aaaaa[i] == "31") { ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_RED); colored = true; }
+				else if (aaaaa[i] == "32") { ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_GREEN); colored = true; }
+				else if (aaaaa[i] == "33") { ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_YELLOW); colored = true; }
+				else if (aaaaa[i] == "34") { ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_BLUE); colored = true; }
+				else if (aaaaa[i] == "35") { ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_MAGENTA); colored = true; }
+				else if (aaaaa[i] == "36") { ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_CYAN); colored = true; }
+				else if (aaaaa[i] == "37") { ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_WHITE); colored = true; }
+
 			}
 
 		}
 		else { // or
+			if (colored == true) {
 
-			if (colored == true) { ImGui::Text(u8"%s", cont.first.c_str()); ImGui::SameLine(); ImGui::PopStyleColor(); colored = false; }
-			else { ImGui::Text(u8"%s", cont.first.c_str()); }
+				ImGui::Text(u8"%s", cont.first.c_str());
+				ImGui::SameLine(); ImGui::PopStyleColor();
+				colored = false;
+
+			}
+			else ImGui::Text(u8"%s", cont.first.c_str());
 		}
 
 	}
@@ -135,8 +110,6 @@ void SHELL::Exec(const char* buf, LIBSSH2_CHANNEL* cn) {
 	char temp[2048];
 	memset(temp, '\0', 2048);
 	sprintf_s(temp, 2048, u8"%s\r\n\0", buf);// idk why, but without "\r\n\0" libssh2_channel_read doesn't work in way I expected.
-	//fprintf(stderr, "%s\n", temp);
-
 	int written = 0;
 
 	do {

@@ -142,10 +142,12 @@
     <ClCompile Include="dependencies\imgui\imgui_stdlib.cpp" />
     <ClCompile Include="dependencies\imgui\imgui_tables.cpp" />
     <ClCompile Include="dependencies\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="explorer.cpp" />
     <ClCompile Include="NebularSurfer.cpp" />
     <ClCompile Include="shell.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="explorer.h" />
     <ClInclude Include="shell.h" />
     <ClInclude Include="dependencies\imgui\imconfig.h" />
     <ClInclude Include="dependencies\imgui\imgui.h" />

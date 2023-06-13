@@ -31,6 +31,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 SSH ssh;
 static int CurrentIdx = -1;
 static int cnt = 0;
+static int LogedIn = false;
 
 #ifdef _DEBUG
 int main(int argc, char* argv[])
@@ -104,25 +105,53 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdL
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
 
-		{
+		if (ImGui::BeginMainMenuBar()) {
+
+			if (ImGui::BeginMenu("New server explorer")) {
+				1 + 1;
+
+				ImGui::EndMenu();
+			}
+
+			ImGui::Separator();
+
+			if (ImGui::BeginMenu("New local explorer")) {
+				1 + 1;
+
+				ImGui::EndMenu();
+			}
+
+			ImGui::Separator();
+
+			ImGui::EndMainMenuBar();
+		}
+
+		if(!LogedIn) {
 			ImGui::Begin("Welcome");
 			ImGui::Text("A open-source free ssh client for Windows.\nYou can review the codes on https://github.com/roy6307/NebulaSurfer");
 			ImGui::End();
 		}
 		//ImU32
 		//ImColor
-		{
+		if(!LogedIn) {
+			static int RadioVal = 0;
+
 			ImGui::Begin("Main panel");
 			ImGui::Text("SSH config");
 			ImGui::InputText("Host address(ipv4)", &ssh.host);
 			ImGui::InputInt("Port", &ssh.port);
 			ImGui::InputText("Username", &ssh.username);
 			ImGui::InputText("Password", &ssh.password);
-			ImGui::InputText("Path to pub key", &ssh.pathToPubKey);
-			ImGui::InputText("Path to private Key", &ssh.pathToPrivKey);
+			if(RadioVal == 1) ImGui::InputText("Path to pub key", &ssh.pathToPubKey);
+			if (RadioVal == 1) ImGui::InputText("Path to private Key", &ssh.pathToPrivKey);
+
+			ImGui::Text("Login option");
+
+			ImGui::SameLine();  ImGui::RadioButton("Use password", &RadioVal, 0);
+			ImGui::SameLine();  ImGui::RadioButton("Use *.pub and *.key", &RadioVal, 1);
 
 			if (ImGui::Button("Connect")) {
-				ssh.init_session();
+				if(ssh.init_session(RadioVal)) LogedIn = true;
 			}
 
 			ImGui::Separator();
@@ -155,15 +184,9 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdL
 			ImGui::End();
 		}
 
-		{
-			std::string st;
-			st.clear();
-			st = ssh.Read();
-			if (st != "") {
-				std::cout << "c: " << st;
-			}
-			SHELL::AddText(st);
-			ImGui::Begin("SSH");
+		if(LogedIn) {
+			SHELL::AddText(ssh.Read());
+			ImGui::Begin("SSH"); 
 			SHELL::Render("SSH", ssh.channel);
 			ImGui::End();
 		}
