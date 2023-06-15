@@ -91,8 +91,6 @@ FetchContent_Declare(
   GIT_TAG "libssh2-1.11.0"
 )
 
-message(ASDASD:${libssh2_SOURCE_DIR})
-
 FetchContent_MakeAvailable(libssh2)
 
 

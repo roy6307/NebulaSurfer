@@ -3,6 +3,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
+#vscode folder
+.vscode/
+
 #CMake build folder
 [Bb]uild/
 

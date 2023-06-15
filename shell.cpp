@@ -23,7 +23,16 @@ std::vector<std::pair<std::string, bool>> SHELL::parseANSICodes(const std::strin
 
 			parsedText.clear();
 			currentCode.clear();
-		}
+		} else if (isInCode && c == 'J') {
+            isInCode = false;
+
+			fprintf(stderr, "Hit: %s\n", currentCode.c_str());
+
+			CONTENT.clear();
+
+			parsedText.clear();
+            currentCode.clear();
+        }
 		else if (isInCode) {
 			if (c != '[') currentCode += c;
 		}
@@ -72,6 +81,7 @@ void SHELL::Print(std::vector<std::pair<std::string, bool>> testingVal) {
 				else if (aaaaa[i] == "35") { ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_MAGENTA); colored = true; }
 				else if (aaaaa[i] == "36") { ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_CYAN); colored = true; }
 				else if (aaaaa[i] == "37") { ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_WHITE); colored = true; }
+				else if (aaaaa[i] == "0")  { 0+0; }
 
 			}
 
