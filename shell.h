@@ -48,10 +48,22 @@ struct AnsiStr {
 	std::string text = "";
 };
 
+enum AnsiDataType {
+	PLAIN_TEXT,
+	TEXT_FORMAT,
+    CURSOR_CONTROL,
+    ERASE_DISPLAY
+};
+
+struct AnsiData {
+	AnsiDataType type;
+    std::string parameter;
+};
+
 namespace SHELL {
-	std::vector<std::pair<std::string, bool>> parseANSICodes(const std::string&);
+	void parseANSICodes(const std::string&);
 	void AddText(std::string);
-	void Print(std::vector<std::pair<std::string, bool>>);
+	void Print();
 	void Exec(const char*, LIBSSH2_CHANNEL*);
 	void Render(const char*, LIBSSH2_CHANNEL*);
 }

@@ -1,154 +1,254 @@
 #include "shell.h"
 
-static std::string CONTENT;
 static std::string UserInput = "";
 
+static std::vector<AnsiData> parsedContent;
+
 // Function to parse ANSI escape codes
-std::vector<std::pair<std::string, bool>> SHELL::parseANSICodes(const std::string& text) {
+// Here are some cases
+// 1. \033[n;n;~(m|H|J) <--- DONE!!!!!!!!!!!!!!!!!!!!!!!!
+// 2. ^[[n;n;~(m|H|J)
+void SHELL::parseANSICodes(const std::string &text)
+{
+
 	std::string parsedText;
-	std::string currentCode;
-	std::vector<std::pair<std::string, bool>> t;
-
 	bool isInCode = false;
-	for (char c : text) {
-		if (c == ESC) {
+	AnsiData ad;
+
+	for (char c : text)
+	{
+
+		if (c == ESC)
+		{
+
 			isInCode = true;
-			currentCode.clear();
+
+			if (parsedText != "")
+			{
+
+				ad.type = AnsiDataType::PLAIN_TEXT;
+				ad.parameter = parsedText;
+				parsedContent.push_back(ad);
+				parsedText.clear();
+			}
 		}
-		else if (isInCode && c == 'm') {
+		else if (isInCode && c == 'm')
+		{
+
 			isInCode = false;
-
-			if (parsedText != "") t.push_back(std::make_pair(parsedText, false));
-			if (currentCode != "") t.push_back(std::make_pair(currentCode, true));
-
+			ad.type = AnsiDataType::TEXT_FORMAT;
+			ad.parameter = parsedText;
+			parsedContent.push_back(ad);
 			parsedText.clear();
-			currentCode.clear();
-		} else if (isInCode && c == 'J') {
-            isInCode = false;
-
-			fprintf(stderr, "Hit: %s\n", currentCode.c_str());
-
-			CONTENT.clear();
-
-			parsedText.clear();
-            currentCode.clear();
-        }
-		else if (isInCode) {
-			if (c != '[') currentCode += c;
 		}
-		else {
+		else if (isInCode && c == 'H')
+		{
+
+			isInCode = false;
+			ad.type = AnsiDataType::CURSOR_CONTROL;
+			ad.parameter = parsedText;
+			parsedContent.push_back(ad);
+			parsedText.clear();
+		}
+		else if (isInCode && c == 'J')
+		{
+
+			isInCode = false;
+			// ad.type = AnsiDataType::ERASE_DISPLAY;
+			ad.parameter = "";
+			parsedContent.clear();
+			parsedText.clear();
+		}
+		else if (isInCode)
+		{ // Didn't meet (m|H|J) but ESC
+			if (c != '[')
+				parsedText += c;
+		}
+		else
+		{
 			parsedText += c;
 		}
 	}
 
-	if (parsedText != "") t.push_back(std::make_pair(parsedText, false));
-
-	return t;
+	if (parsedText != "") // push left texts :D
+	{
+		ad.type = AnsiDataType::PLAIN_TEXT;
+		ad.parameter = parsedText;
+		parsedContent.push_back(ad);
+	}
 }
 
-std::vector<std::string> split(std::string inp, char cha) {
+std::vector<std::string> split(std::string inp, char cha)
+{
 	std::vector<std::string> a;
 	std::stringstream b(inp);
 	std::string c;
 
-	while (getline(b, c, cha)) {
+	while (getline(b, c, cha))
+	{
 		a.push_back(c);
 	}
 
 	return a;
 }
 
-void SHELL::Print(std::vector<std::pair<std::string, bool>> testingVal) {
+void SHELL::Print()
+{
 
-	std::vector<std::pair<std::string, bool>>::iterator iter;
-	bool colored = false;
+	std::vector<AnsiData>::iterator iter;
+	bool IsPushed = false; // To avoid error imgui popstyle underflow.
 
-	for (iter = testingVal.begin(); iter != testingVal.end(); iter++) {
+	for (iter = parsedContent.begin(); iter != parsedContent.end(); iter++)
+	{
+		AnsiData cont = *iter;
 
-		std::pair<std::string, bool> cont = *iter;
+		if (cont.type == AnsiDataType::TEXT_FORMAT)
+		{
+			std::vector<std::string> aaaaa = split(cont.parameter, ';');
 
-		if (cont.second == true) { // color
-
-			std::vector<std::string> aaaaa = split(cont.first, ';');
-
-			for (int i = 0; i < aaaaa.size(); i++) {
-
-				if (aaaaa[i] == "30") { ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_BLACK); colored = true; }
-				else if (aaaaa[i] == "31") { ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_RED); colored = true; }
-				else if (aaaaa[i] == "32") { ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_GREEN); colored = true; }
-				else if (aaaaa[i] == "33") { ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_YELLOW); colored = true; }
-				else if (aaaaa[i] == "34") { ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_BLUE); colored = true; }
-				else if (aaaaa[i] == "35") { ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_MAGENTA); colored = true; }
-				else if (aaaaa[i] == "36") { ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_CYAN); colored = true; }
-				else if (aaaaa[i] == "37") { ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_WHITE); colored = true; }
-				else if (aaaaa[i] == "0")  { 0+0; }
-
+			for (int i = 0; i < aaaaa.size(); i++)
+			{
+				if (aaaaa[i] == "30")
+				{
+					if (IsPushed)
+					{
+						ImGui::PopStyleColor();
+					}
+					ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_BLACK);
+					IsPushed = true;
+				}
+				else if (aaaaa[i] == "31")
+				{
+					if (IsPushed)
+					{
+						ImGui::PopStyleColor();
+					}
+					ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_RED);
+					IsPushed = true;
+				}
+				else if (aaaaa[i] == "32")
+				{
+					if (IsPushed)
+					{
+						ImGui::PopStyleColor();
+					}
+					ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_GREEN);
+					IsPushed = true;
+				}
+				else if (aaaaa[i] == "33")
+				{
+					if (IsPushed)
+					{
+						ImGui::PopStyleColor();
+					}
+					ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_YELLOW);
+					IsPushed = true;
+				}
+				else if (aaaaa[i] == "34")
+				{
+					if (IsPushed)
+					{
+						ImGui::PopStyleColor();
+					}
+					ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_BLUE);
+					IsPushed = true;
+				}
+				else if (aaaaa[i] == "35")
+				{
+					if (IsPushed)
+					{
+						ImGui::PopStyleColor();
+					}
+					ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_MAGENTA);
+					IsPushed = true;
+				}
+				else if (aaaaa[i] == "36")
+				{
+					if (IsPushed)
+					{
+						ImGui::PopStyleColor();
+					}
+					ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_CYAN);
+					IsPushed = true;
+				}
+				else if (aaaaa[i] == "37")
+				{
+					if (IsPushed)
+					{
+						ImGui::PopStyleColor();
+					}
+					ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_WHITE);
+					IsPushed = true;
+				}
+				else if ((aaaaa[i] == "0") && (IsPushed == true))
+				{
+					ImGui::PopStyleColor();
+					IsPushed = false;
+				}
 			}
-
 		}
-		else { // or
-			if (colored == true) {
-
-				ImGui::Text(u8"%s", cont.first.c_str());
-				ImGui::SameLine(); ImGui::PopStyleColor();
-				colored = false;
-
-			}
-			else ImGui::Text(u8"%s", cont.first.c_str());
+		else if (cont.type == AnsiDataType::PLAIN_TEXT)
+		{
+			if (IsPushed == true)
+				ImGui::SameLine();
+			ImGui::Text(u8"%s", cont.parameter.c_str());
 		}
-
 	}
-
 }
 
-//https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797#common-private-modes
-void SHELL::AddText(std::string data) {
+// https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797#common-private-modes
+void SHELL::AddText(std::string data)
+{
 
-	if (data != "") {
+	if (data != "")
+	{
 		std::regex re("\x1b\\[\\?2004(h?l)");
 		std::string a = std::regex_replace(data, re, "");
-		CONTENT += a;
+		parseANSICodes(a);
 	}
-
 }
 
-void SHELL::Exec(const char* buf, LIBSSH2_CHANNEL* cn) {
+void SHELL::Exec(const char *buf, LIBSSH2_CHANNEL *cn)
+{
 	int rc = 0;
 	char response[4096];
 	memset(response, '\0', 4096);
 
 	char temp[2048];
 	memset(temp, '\0', 2048);
-	sprintf_s(temp, 2048, u8"%s\r\n\0", buf);// idk why, but without "\r\n\0" libssh2_channel_read doesn't work in way I expected.
+	sprintf_s(temp, 2048, u8"%s\r\n\0", buf); // idk why, but without "\r\n\0" libssh2_channel_read doesn't work in way I expected.
 	int written = 0;
 
-	do {
+	do
+	{
 		rc = libssh2_channel_write(cn, temp, strlen(temp));
 		written += rc;
 	} while (LIBSSH2_ERROR_EAGAIN != rc && rc > 0 && written != strlen(temp));
 }
 
-void SHELL::Render(const char* title, LIBSSH2_CHANNEL* cn) {
+void SHELL::Render(const char *title, LIBSSH2_CHANNEL *cn)
+{
 
 	ImGui::Begin(title);
 
 	if (ImGui::BeginChild("scrolling", ImVec2(0, -(ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing())), false, ImGuiWindowFlags_HorizontalScrollbar))
 	{
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
-		if (CONTENT != "") Print(SHELL::parseANSICodes(CONTENT));
+		if (parsedContent.size() > 0)
+			Print();
 		ImGui::PopStyleVar();
 	}
 
 	ImGui::EndChild();
 
-	if (ImGui::InputText(":D  ", &UserInput, ImGuiInputTextFlags_EnterReturnsTrue)) {
+	// Need to be changed. Not what I want.
+	if (ImGui::InputText(":D  ", &UserInput, ImGuiInputTextFlags_EnterReturnsTrue))
+	{
 		ImGui::SetItemDefaultFocus();
 		ImGui::SetKeyboardFocusHere(-1);
 		SHELL::Exec(UserInput.c_str(), cn);
 		UserInput.clear();
 	}
-	//ImGui::SameLine();
-	//if (ImGui::Button("Clear")) { TextBuf.clear(); }
 
 	ImGui::End();
 }
