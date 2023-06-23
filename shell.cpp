@@ -17,15 +17,12 @@ void SHELL::parseANSICodes(const std::string &text)
 
 	for (char c : text)
 	{
-
 		if (c == ESC)
 		{
-
 			isInCode = true;
 
 			if (parsedText != "")
 			{
-
 				ad.type = AnsiDataType::PLAIN_TEXT;
 				ad.parameter = parsedText;
 				parsedContent.push_back(ad);
@@ -34,7 +31,6 @@ void SHELL::parseANSICodes(const std::string &text)
 		}
 		else if (isInCode && c == 'm')
 		{
-
 			isInCode = false;
 			ad.type = AnsiDataType::TEXT_FORMAT;
 			ad.parameter = parsedText;
@@ -43,7 +39,6 @@ void SHELL::parseANSICodes(const std::string &text)
 		}
 		else if (isInCode && c == 'H')
 		{
-
 			isInCode = false;
 			ad.type = AnsiDataType::CURSOR_CONTROL;
 			ad.parameter = parsedText;
@@ -52,7 +47,6 @@ void SHELL::parseANSICodes(const std::string &text)
 		}
 		else if (isInCode && c == 'J')
 		{
-
 			isInCode = false;
 			// ad.type = AnsiDataType::ERASE_DISPLAY;
 			ad.parameter = "";
@@ -97,7 +91,7 @@ void SHELL::Print()
 
 	std::vector<AnsiData>::iterator iter;
 	bool IsPushed = false; // To avoid error imgui popstyle underflow.
-
+	
 	for (iter = parsedContent.begin(); iter != parsedContent.end(); iter++)
 	{
 		AnsiData cont = *iter;
@@ -106,91 +100,22 @@ void SHELL::Print()
 		{
 			std::vector<std::string> aaaaa = split(cont.parameter, ';');
 
-			for (int i = 0; i < aaaaa.size(); i++)
-			{
-				if (aaaaa[i] == "30")
-				{
-					if (IsPushed)
-					{
-						ImGui::PopStyleColor();
-					}
-					ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_BLACK);
-					IsPushed = true;
-				}
-				else if (aaaaa[i] == "31")
-				{
-					if (IsPushed)
-					{
-						ImGui::PopStyleColor();
-					}
-					ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_RED);
-					IsPushed = true;
-				}
-				else if (aaaaa[i] == "32")
-				{
-					if (IsPushed)
-					{
-						ImGui::PopStyleColor();
-					}
-					ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_GREEN);
-					IsPushed = true;
-				}
-				else if (aaaaa[i] == "33")
-				{
-					if (IsPushed)
-					{
-						ImGui::PopStyleColor();
-					}
-					ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_YELLOW);
-					IsPushed = true;
-				}
-				else if (aaaaa[i] == "34")
-				{
-					if (IsPushed)
-					{
-						ImGui::PopStyleColor();
-					}
-					ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_BLUE);
-					IsPushed = true;
-				}
-				else if (aaaaa[i] == "35")
-				{
-					if (IsPushed)
-					{
-						ImGui::PopStyleColor();
-					}
-					ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_MAGENTA);
-					IsPushed = true;
-				}
-				else if (aaaaa[i] == "36")
-				{
-					if (IsPushed)
-					{
-						ImGui::PopStyleColor();
-					}
-					ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_CYAN);
-					IsPushed = true;
-				}
-				else if (aaaaa[i] == "37")
-				{
-					if (IsPushed)
-					{
-						ImGui::PopStyleColor();
-					}
-					ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_WHITE);
-					IsPushed = true;
-				}
-				else if ((aaaaa[i] == "0") && (IsPushed == true))
-				{
-					ImGui::PopStyleColor();
-					IsPushed = false;
-				}
+			for (int i = 0; i < aaaaa.size(); i++) {
+					 if (aaaaa[i] == "30") { if(IsPushed){ImGui::PopStyleColor();} ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_BLACK); IsPushed = true; }
+				else if (aaaaa[i] == "31") { if(IsPushed){ImGui::PopStyleColor();} ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_RED); IsPushed = true; }
+				else if (aaaaa[i] == "32") { if(IsPushed){ImGui::PopStyleColor();} ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_GREEN); IsPushed = true; }
+				else if (aaaaa[i] == "33") { if(IsPushed){ImGui::PopStyleColor();} ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_YELLOW); IsPushed = true; }
+				else if (aaaaa[i] == "34") { if(IsPushed){ImGui::PopStyleColor();} ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_BLUE); IsPushed = true; }
+				else if (aaaaa[i] == "35") { if(IsPushed){ImGui::PopStyleColor();} ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_MAGENTA); IsPushed = true; }
+				else if (aaaaa[i] == "36") { if(IsPushed){ImGui::PopStyleColor();} ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_CYAN); IsPushed = true; }
+				else if (aaaaa[i] == "37") { if(IsPushed){ImGui::PopStyleColor();} ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_WHITE); IsPushed = true; }
+				else if ((aaaaa[i] == "0") && (IsPushed == true))  { ImGui::PopStyleColor(); IsPushed = false; }
 			}
+
 		}
 		else if (cont.type == AnsiDataType::PLAIN_TEXT)
 		{
-			if (IsPushed == true)
-				ImGui::SameLine();
+			if(IsPushed == true) ImGui::SameLine(); 
 			ImGui::Text(u8"%s", cont.parameter.c_str());
 		}
 	}
