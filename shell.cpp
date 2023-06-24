@@ -1,5 +1,7 @@
 #include "shell.h"
 
+#define ANSI_NULL_IS_ZERO if(parsedText=="")parsedText="0"
+
 static std::string UserInput = "";
 
 static std::vector<AnsiData> parsedContent;
@@ -8,11 +10,14 @@ static std::vector<AnsiData> parsedContent;
 // Here are some cases
 // 1. \033[n;n;~(m|H|J) <--- DONE!!!!!!!!!!!!!!!!!!!!!!!!
 // 2. ^[[n;n;~(m|H|J)
+// h l H J B m K
+//  \33(B\33[m\33[39;49m\33[K\n\33(B\33[m <--- wtf is this????
 void SHELL::parseANSICodes(const std::string &text)
 {
 
 	std::string parsedText;
 	bool isInCode = false;
+	bool zxc = false;
 	AnsiData ad;
 
 	for (char c : text)
@@ -29,10 +34,29 @@ void SHELL::parseANSICodes(const std::string &text)
 				parsedText.clear();
 			}
 		}
+		else if (isInCode == false && zxc == false && c == '^')
+		{
+			zxc = true;
+		}
+		else if (isInCode == false && zxc == true && '[')
+		{
+
+			zxc = false;
+			isInCode = true;
+
+			if (parsedText != "")
+			{
+				ad.type = AnsiDataType::PLAIN_TEXT;
+				ad.parameter = parsedText;
+				parsedContent.push_back(ad);
+				parsedText.clear();
+			}
+		}
 		else if (isInCode && c == 'm')
 		{
 			isInCode = false;
 			ad.type = AnsiDataType::TEXT_FORMAT;
+			ANSI_NULL_IS_ZERO;
 			ad.parameter = parsedText;
 			parsedContent.push_back(ad);
 			parsedText.clear();
@@ -41,6 +65,7 @@ void SHELL::parseANSICodes(const std::string &text)
 		{
 			isInCode = false;
 			ad.type = AnsiDataType::CURSOR_CONTROL;
+			ANSI_NULL_IS_ZERO;
 			ad.parameter = parsedText;
 			parsedContent.push_back(ad);
 			parsedText.clear();
@@ -52,6 +77,15 @@ void SHELL::parseANSICodes(const std::string &text)
 			ad.parameter = "";
 			parsedContent.clear();
 			parsedText.clear();
+		}
+		else if (isInCode && c == 'h')
+		{
+				isInCode = false;
+				ad.type = AnsiDataType::PLAIN_TEXT;
+				ad.parameter = "";
+				parsedContent.push_back(ad);
+				parsedText.clear();
+			
 		}
 		else if (isInCode)
 		{ // Didn't meet (m|H|J) but ESC
@@ -118,18 +152,23 @@ void SHELL::Print()
 			if(IsPushed == true) ImGui::SameLine(); 
 			ImGui::Text(u8"%s", cont.parameter.c_str());
 		}
+
+		//if(cont.type == AnsiDataType::PLAIN_TEXT) std::cout << "PLAIN_TEXT\t\t" << cont.parameter << std::endl;
+		//if(cont.type == AnsiDataType::TEXT_FORMAT) std::cout << "TEXT_FORMAT\t\t" << cont.parameter << std::endl;
+		//if(cont.type == AnsiDataType::CURSOR_CONTROL) std::cout << "CURSOR_CONTROL\t\t" << cont.parameter << std::endl;
+
+        
 	}
 }
 
 // https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797#common-private-modes
 void SHELL::AddText(std::string data)
 {
-
 	if (data != "")
 	{
-		std::regex re("\x1b\\[\\?2004(h?l)");
-		std::string a = std::regex_replace(data, re, "");
-		parseANSICodes(a);
+		//std::regex re("\x1b\\[\\?2004(h\?l\?)");
+		//std::string a = std::regex_replace(data, re, "");
+		parseANSICodes(data);
 	}
 }
 
@@ -173,6 +212,10 @@ void SHELL::Render(const char *title, LIBSSH2_CHANNEL *cn)
 		ImGui::SetKeyboardFocusHere(-1);
 		SHELL::Exec(UserInput.c_str(), cn);
 		UserInput.clear();
+	}
+	ImGui::SameLine();
+	if(ImGui::Button("clear")){
+		parsedContent.clear();
 	}
 
 	ImGui::End();

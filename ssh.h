@@ -82,7 +82,7 @@ bool SSH::init_session(const int LOption) {
 	u_long mode = 1;
 	ioctlsocket(this->ssh_socket, FIONBIO, &mode);
 
-	this->session = libssh2_session_init();
+	//this->session = libssh2_session_init(); really need?
 
 	if (libssh2_session_handshake(this->session, this->ssh_socket) != 0) {
 		fprintf(stderr, "Failure establishing SSH session\n");
