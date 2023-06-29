@@ -9,6 +9,7 @@ Base source from imgui\examples\example_win32_directx9\main.cpp
 
 #include "ssh.h"
 #include "shell.h"
+#include "explorer.h"
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_dx9.h"
@@ -126,6 +127,8 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdL
 			ImGui::EndMainMenuBar();
 		}
 
+		Explorer::Local::Render("Explorer");
+
 		if(!LogedIn) {
 			ImGui::Begin("Welcome");
 			ImGui::Text("A open-source free ssh client for Windows.\nYou can review the codes on https://github.com/roy6307/NebulaSurfer");
@@ -185,7 +188,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdL
 		}
 
 		if(LogedIn) {
-			SHELL::AddText(ssh.Read());
+			SHELL::parseANSICodes(ssh.Read());
 			ImGui::Begin("SSH"); 
 			SHELL::Render("SSH", ssh.channel);
 			ImGui::End();

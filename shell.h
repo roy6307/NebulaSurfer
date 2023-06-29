@@ -62,7 +62,6 @@ struct AnsiData {
 
 namespace SHELL {
 	void parseANSICodes(const std::string&);
-	void AddText(std::string);
 	void Print();
 	void Exec(const char*, LIBSSH2_CHANNEL*);
 	void Render(const char*, LIBSSH2_CHANNEL*);

@@ -10,15 +10,20 @@ static std::vector<AnsiData> parsedContent;
 // Here are some cases
 // 1. \033[n;n;~(m|H|J) <--- DONE!!!!!!!!!!!!!!!!!!!!!!!!
 // 2. ^[[n;n;~(m|H|J)
-// h l H J B m K
+// h l H J B m K   |||  m H J h  |||  l B K
 //  \33(B\33[m\33[39;49m\33[K\n\33(B\33[m <--- wtf is this????
-void SHELL::parseANSICodes(const std::string &text)
+// '\xf' << WTF is this tooooo????????
+// Need to handle CSI n H
+void SHELL::parseANSICodes(const std::string &ctext)
 {
 
 	std::string parsedText;
 	bool isInCode = false;
 	bool zxc = false;
 	AnsiData ad;
+
+	std::regex re("(\\r)|\xf");
+	std::string text = std::regex_replace(ctext, re, "");
 
 	for (char c : text)
 	{
@@ -87,6 +92,15 @@ void SHELL::parseANSICodes(const std::string &text)
 				parsedText.clear();
 			
 		}
+		else if (isInCode && ((c == 'l') || (c == 'B') || (c == 'K')))
+		{
+				isInCode = false;
+				ad.type = AnsiDataType::PLAIN_TEXT;
+				ad.parameter = "";
+				//parsedContent.push_back(ad);
+				parsedText.clear();
+			
+		}
 		else if (isInCode)
 		{ // Didn't meet (m|H|J) but ESC
 			if (c != '[')
@@ -145,42 +159,30 @@ void SHELL::Print()
 				else if (aaaaa[i] == "37") { if(IsPushed){ImGui::PopStyleColor();} ImGui::PushStyleColor(ImGuiCol_Text, ANSI_COLOR_WHITE); IsPushed = true; }
 				else if ((aaaaa[i] == "0") && (IsPushed == true))  { ImGui::PopStyleColor(); IsPushed = false; }
 			}
-
+		}
+		else if (cont.type == AnsiDataType::CURSOR_CONTROL)
+		{
+			if (cont.parameter == "0")
+			{
+				0+0;
+			}
 		}
 		else if (cont.type == AnsiDataType::PLAIN_TEXT)
 		{
-			if(IsPushed == true) ImGui::SameLine(); 
+			if(IsPushed == true) ImGui::SameLine(); // New method need. this is a shitty way.
 			ImGui::Text(u8"%s", cont.parameter.c_str());
+			//ImVec2 tempvec2 = ImGui::GetCursorPos();
+			//std::cout << "X: " << tempvec2.x << "\tY: " << tempvec2.y << std::endl;
 		}
-
-		//if(cont.type == AnsiDataType::PLAIN_TEXT) std::cout << "PLAIN_TEXT\t\t" << cont.parameter << std::endl;
-		//if(cont.type == AnsiDataType::TEXT_FORMAT) std::cout << "TEXT_FORMAT\t\t" << cont.parameter << std::endl;
-		//if(cont.type == AnsiDataType::CURSOR_CONTROL) std::cout << "CURSOR_CONTROL\t\t" << cont.parameter << std::endl;
-
-        
-	}
-}
-
-// https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797#common-private-modes
-void SHELL::AddText(std::string data)
-{
-	if (data != "")
-	{
-		//std::regex re("\x1b\\[\\?2004(h\?l\?)");
-		//std::string a = std::regex_replace(data, re, "");
-		parseANSICodes(data);
 	}
 }
 
 void SHELL::Exec(const char *buf, LIBSSH2_CHANNEL *cn)
 {
 	int rc = 0;
-	char response[4096];
-	memset(response, '\0', 4096);
-
-	char temp[2048];
-	memset(temp, '\0', 2048);
-	sprintf_s(temp, 2048, u8"%s\r\n\0", buf); // idk why, but without "\r\n\0" libssh2_channel_read doesn't work in way I expected.
+	char* temp = new char[strlen(buf)+3];
+	memset(temp, '\0', strlen(buf)+3);
+	sprintf_s(temp, strlen(buf)+3, u8"%s\r\n\0", buf); // idk why, but without "\r\n\0" libssh2_channel_read doesn't work in way I expected.
 	int written = 0;
 
 	do
@@ -188,6 +190,8 @@ void SHELL::Exec(const char *buf, LIBSSH2_CHANNEL *cn)
 		rc = libssh2_channel_write(cn, temp, strlen(temp));
 		written += rc;
 	} while (LIBSSH2_ERROR_EAGAIN != rc && rc > 0 && written != strlen(temp));
+
+	delete[] temp;
 }
 
 void SHELL::Render(const char *title, LIBSSH2_CHANNEL *cn)

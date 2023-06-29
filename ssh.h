@@ -130,7 +130,7 @@ bool SSH::init_session(const int LOption) {
 		return false;
 	}
 
-	if (libssh2_channel_request_pty(this->channel, "vanilla")) {
+	if (libssh2_channel_request_pty(this->channel, "vt100")) {
 		fprintf(stderr, "Failed requesting pty\n");
 		libssh2_channel_free(this->channel);
 		channel = NULL;
@@ -143,7 +143,7 @@ bool SSH::init_session(const int LOption) {
 	}
 
 	libssh2_channel_set_blocking(this->channel, 0);
-	libssh2_session_set_blocking(this->session, 0);
+	//libssh2_session_set_blocking(this->session, 0);
 
 	fprintf(stderr, "-- All done!\n\n");
 
@@ -151,20 +151,21 @@ bool SSH::init_session(const int LOption) {
 }
 
 std::string SSH::Read() {
-
-	char received[2048];
+	//std::cout << "reading" << std::endl;
 	std::string r = "";
-	memset(received, '\0', 2048);
-
-	int rc = 0;
-
-	do {
-		rc = libssh2_channel_read(this->channel, received, 2048);
-		r.append(received);
-		memset(received, '\0', 2048);
-	} while (LIBSSH2_ERROR_EAGAIN != rc && rc > 0);
-
-	return r;
+	char buffer[1024];
+	ssize_t nbytes;
+	do
+	{
+		nbytes = libssh2_channel_read(channel, buffer, sizeof(buffer) - 1);
+		if (nbytes > 0)
+		{
+			buffer[nbytes] = '\0';
+			r += buffer;
+		}
+	} while (LIBSSH2_ERROR_EAGAIN != nbytes && nbytes > 0);
+	//if(r!="")std::cout << r << std::endl;
+	return (r!="") ? r : "";
 }
 
 void SSH::setCnfList() {
