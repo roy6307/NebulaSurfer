@@ -5,14 +5,18 @@
 #include <vector>
 #include <string>
 #include <filesystem>
+#include <d3d9.h>
+#include <DirectXTex.h>
 
 #include "imgui/imgui.h"
+#include "imgui/imgui_internal.h"
+
 
 enum ExplorerFileType {
 
-    DIRECTORY,
-    UNKNOWN,
-    IMAGE,
+    FOLDER,
+    DEFAULT,
+    PICTURE,
     TXT,
     EXE
 
@@ -28,10 +32,12 @@ struct ExplorerFileInfo {
 
 struct ExplorerMain {
     std::vector<ExplorerFileInfo> flist;
-    std::string currentPath = "C:/";
+    std::string currentPath = "C:\\";
 };
 
 namespace Explorer{
+
+    void init(LPDIRECT3DDEVICE9);
 
     namespace Local{
 

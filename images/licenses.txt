@@ -2,3 +2,5 @@
 <a target="_blank" href="https://icons8.com/icon/12160/folder">Folder</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
 <a target="_blank" href="https://icons8.com/icon/12245/image-file">Image File</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
 <a target="_blank" href="https://icons8.com/icon/12778/picture">Picture</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
+<a target="_blank" href="https://icons8.com/icon/13395/txt">TXT</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
+<a target="_blank" href="https://icons8.com/icon/12119/exe">EXE</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>

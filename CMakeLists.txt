@@ -82,7 +82,6 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 ################################################################################
 # Sub-projects
 ################################################################################
-
 include(FetchContent)
 
 FetchContent_Declare(
@@ -93,7 +92,24 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(libssh2)
 
+FetchContent_Declare(
+    DirectXTex
+    GIT_REPOSITORY https://github.com/microsoft/DirectXTex.git
+    GIT_TAG        main
+)
 
+# The giga chad style :D
+SET(BC_USE_OPENMP OFF)
+SET(BUILD_DX11 OFF)
+SET(BUILD_DX12 OFF)
+SET(BUILD_SAMPLE OFF)
+SET(BUILD_TOOLS OFF)
+SET(BUILD_TESTING OFF)
+SET(BUILD_EXAMPLES OFF)
+
+FetchContent_MakeAvailable(DirectXTex)
+
+target_compile_definitions(DirectXTex PRIVATE "/EHsc")
 set(PROJECT_NAME NebulaSurfer)
 
 ################################################################################
@@ -196,6 +212,19 @@ set(rapidjson__msinttypes
 )
 source_group("rapidjson\\msinttypes" FILES ${rapidjson__msinttypes})
 
+set(DXTex 
+    "dependencies/DirectXTex/DirectXTex.h"
+    "dependencies/DirectXTex/DirectXTex.inl"
+)
+
+source_group("DXTex" FILES ${DXTex})
+
+set(stb_image
+    "dependencies/stb/stb_image.h"
+)
+
+source_group("stb_image" FILES ${stb_image})
+
 set(ALL_FILES
     ${Header_Files}
     ${Source_Files}
@@ -205,12 +234,15 @@ set(ALL_FILES
     ${rapidjson__error}
     ${rapidjson__internal}
     ${rapidjson__msinttypes}
+    ${DXTex}
+    ${stb_image}
 )
 
 ################################################################################
 # Target
 ################################################################################
 add_executable(${PROJECT_NAME} ${ALL_FILES})
+set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/")
 
 use_props(${PROJECT_NAME} "${CMAKE_CONFIGURATION_TYPES}" "${DEFAULT_CXX_PROPS}")
 set(ROOT_NAMESPACE NebulaSurfer)
@@ -253,6 +285,7 @@ if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
         "_CONSOLE;"
         "UNICODE;"
         "_UNICODE"
+        "/EHsc"
     )
 elseif("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x86")
     target_compile_definitions(${PROJECT_NAME} PRIVATE
@@ -266,6 +299,7 @@ elseif("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x86")
         "_CONSOLE;"
         "UNICODE;"
         "_UNICODE"
+        "/EHsc"
     )
 endif()
 
@@ -284,6 +318,7 @@ if(MSVC)
             /std:c++17;
             /sdl;
             /W3;
+            /EHsc;
             ${DEFAULT_CXX_DEBUG_INFORMATION_FORMAT};
             ${DEFAULT_CXX_EXCEPTION_HANDLING}
         )
@@ -296,6 +331,7 @@ if(MSVC)
             /permissive-;
             /sdl;
             /W3;
+            /EHsc;
             ${DEFAULT_CXX_DEBUG_INFORMATION_FORMAT};
             ${DEFAULT_CXX_EXCEPTION_HANDLING}
         )
@@ -334,8 +370,9 @@ if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
         ">"
         "ws2_32;"
         "d3d9;"
-        "${libssh2_BINARY_DIR}/src/Debug/libssh2.lib"
+        "${CMAKE_BINARY_DIR}/_deps/libssh2-build/src/Debug/libssh2.lib"
     )
 endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE "${ADDITIONAL_LIBRARY_DEPENDENCIES}")
+target_link_libraries(${PROJECT_NAME} PRIVATE DirectXTex)
 

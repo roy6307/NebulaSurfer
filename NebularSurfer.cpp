@@ -15,6 +15,7 @@ Base source from imgui\examples\example_win32_directx9\main.cpp
 #include "imgui/imgui_impl_dx9.h"
 #include "imgui/imgui_impl_win32.h"
 #include "imgui/imgui_stdlib.h"
+#include "imgui/imgui_internal.h"
 
 
 
@@ -83,6 +84,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdL
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
 	ssh.setCnfList();
+	Explorer::init(g_pd3dDevice);
 
 	// Main loop
 	bool done = false;
@@ -129,7 +131,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdL
 
 		Explorer::Local::Render("Explorer");
 
-		if(!LogedIn) {
+		if (!LogedIn){
 			ImGui::Begin("Welcome");
 			ImGui::Text("A open-source free ssh client for Windows.\nYou can review the codes on https://github.com/roy6307/NebulaSurfer");
 			ImGui::End();
