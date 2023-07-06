@@ -32,7 +32,7 @@ struct ExplorerFileInfo {
 
 struct ExplorerMain {
     std::vector<ExplorerFileInfo> flist;
-    std::string currentPath = "C:\\";
+    std::string currentPath = "/";
 };
 
 namespace Explorer{
