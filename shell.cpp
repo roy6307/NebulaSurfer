@@ -14,7 +14,7 @@ static std::vector<AnsiData> parsedContent;
 //  \33(B\33[m\33[39;49m\33[K\n\33(B\33[m <--- wtf is this????
 // '\xf' << WTF is this tooooo????????
 // Need to handle CSI n H
-void SHELL::parseANSICodes(const std::string &ctext)
+void NebulaSurfer::SHELL::parseANSICodes(const std::string &ctext)
 {
 
 	std::string parsedText;
@@ -134,7 +134,7 @@ std::vector<std::string> split(std::string inp, char cha)
 	return a;
 }
 
-void SHELL::Print()
+void NebulaSurfer::SHELL::Print()
 {
 
 	std::vector<AnsiData>::iterator iter;
@@ -177,24 +177,7 @@ void SHELL::Print()
 	}
 }
 
-void SHELL::Exec(const char *buf, LIBSSH2_CHANNEL *cn)
-{
-	int rc = 0;
-	char* temp = new char[strlen(buf)+3];
-	memset(temp, '\0', strlen(buf)+3);
-	sprintf_s(temp, strlen(buf)+3, u8"%s\r\n\0", buf); // idk why, but without "\r\n\0" libssh2_channel_read doesn't work in way I expected.
-	int written = 0;
-
-	do
-	{
-		rc = libssh2_channel_write(cn, temp, strlen(temp));
-		written += rc;
-	} while (LIBSSH2_ERROR_EAGAIN != rc && rc > 0 && written != strlen(temp));
-
-	delete[] temp;
-}
-
-void SHELL::Render(const char *title, LIBSSH2_CHANNEL *cn)
+void NebulaSurfer::SHELL::Render(const char *title)
 {
 
 	ImGui::Begin(title);
@@ -214,7 +197,7 @@ void SHELL::Render(const char *title, LIBSSH2_CHANNEL *cn)
 	{
 		ImGui::SetItemDefaultFocus();
 		ImGui::SetKeyboardFocusHere(-1);
-		SHELL::Exec(UserInput.c_str(), cn);
+		NebulaSurfer::Network::SSH::Exec(UserInput.c_str());
 		UserInput.clear();
 	}
 	ImGui::SameLine();

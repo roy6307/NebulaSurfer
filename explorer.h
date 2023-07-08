@@ -6,14 +6,15 @@
 #include <string>
 #include <filesystem>
 #include <d3d9.h>
-#include <DirectXTex.h>
+#include <iostream>
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
 
+#include "network.h"
 
-enum ExplorerFileType {
-
+enum ExplorerFileType
+{
     FOLDER,
     DEFAULT,
     PICTURE,
@@ -22,27 +23,40 @@ enum ExplorerFileType {
 
 };
 
-struct ExplorerFileInfo {
-
+struct ExplorerFileInfo
+{
     unsigned long long size = 0;
     std::filesystem::path path = ""; // use absolute path
     ExplorerFileType ftype;
-
 };
 
-struct ExplorerMain {
-    std::vector<ExplorerFileInfo> flist;
+struct ExplorerMain
+{
+    std::vector<ExplorerFileInfo> lflist; // for local
+    std::vector<ExplorerFileInfo> rflist; // for remote
     std::string currentPath = "/";
 };
 
-namespace Explorer{
+namespace NebulaSurfer
+{
 
-    void init(LPDIRECT3DDEVICE9);
+    namespace Explorer
+    {
 
-    namespace Local{
+        void init(LPDIRECT3DDEVICE9);
 
-        void Render(const char*);
+        namespace Local
+        {
 
+            void Render(const char *);
+
+        }
+
+        namespace Remote{
+            
+            void Render(const char* title);
+
+        }
+        
     }
-
 }

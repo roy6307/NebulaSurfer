@@ -5,6 +5,8 @@
 
 #include "libssh2/include/libssh2.h"
 
+#include "network.h"
+
 #include <string>
 #include <vector>
 #include <regex>
@@ -12,10 +14,9 @@
 #include <iostream>
 #include <sstream>
 
-
 #define ESC '\033'
 
-//https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797#erase-functions
+// https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797#erase-functions
 /*
 ESC[J	erase in display (same as ESC[0J)
 ESC[0J	erase from cursor until end of screen
@@ -42,27 +43,33 @@ ESC[2K	erase the entire line
 #define ANSI_COLOR_RESET	0x1			// reset all colors, text effects
 
 // https://github.com/ocornut/imgui/issues/1566
-struct AnsiStr {
+struct AnsiStr
+{
 	unsigned int Fg_Col = ANSI_COLOR_WHITE;
 	unsigned int Bg_Col = ANSI_COLOR_BLACK;
 	std::string text = "";
 };
 
-enum AnsiDataType {
+enum AnsiDataType
+{
 	PLAIN_TEXT,
 	TEXT_FORMAT,
-    CURSOR_CONTROL,
-    ERASE_DISPLAY
+	CURSOR_CONTROL,
+	ERASE_DISPLAY
 };
 
-struct AnsiData {
+struct AnsiData
+{
 	AnsiDataType type;
-    std::string parameter;
+	std::string parameter;
 };
 
-namespace SHELL {
-	void parseANSICodes(const std::string&);
-	void Print();
-	void Exec(const char*, LIBSSH2_CHANNEL*);
-	void Render(const char*, LIBSSH2_CHANNEL*);
+namespace NebulaSurfer
+{
+	namespace SHELL
+	{
+		void parseANSICodes(const std::string &);
+		void Print();
+		void Render(const char *);
+	}
 }

@@ -92,24 +92,6 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(libssh2)
 
-FetchContent_Declare(
-    DirectXTex
-    GIT_REPOSITORY https://github.com/microsoft/DirectXTex.git
-    GIT_TAG        main
-)
-
-# The giga chad style :D
-SET(BC_USE_OPENMP OFF)
-SET(BUILD_DX11 OFF)
-SET(BUILD_DX12 OFF)
-SET(BUILD_SAMPLE OFF)
-SET(BUILD_TOOLS OFF)
-SET(BUILD_TESTING OFF)
-SET(BUILD_EXAMPLES OFF)
-
-FetchContent_MakeAvailable(DirectXTex)
-
-target_compile_definitions(DirectXTex PRIVATE "/EHsc")
 set(PROJECT_NAME NebulaSurfer)
 
 ################################################################################
@@ -118,7 +100,7 @@ set(PROJECT_NAME NebulaSurfer)
 set(Header_Files
     "explorer.h"
     "shell.h"
-    "ssh.h"
+    "network.h"
 )
 source_group("Header Files" FILES ${Header_Files})
 
@@ -126,6 +108,7 @@ set(Source_Files
     "explorer.cpp"
     "NebularSurfer.cpp"
     "shell.cpp"
+    "network.cpp"
 )
 source_group("Source Files" FILES ${Source_Files})
 
@@ -212,13 +195,6 @@ set(rapidjson__msinttypes
 )
 source_group("rapidjson\\msinttypes" FILES ${rapidjson__msinttypes})
 
-set(DXTex 
-    "dependencies/DirectXTex/DirectXTex.h"
-    "dependencies/DirectXTex/DirectXTex.inl"
-)
-
-source_group("DXTex" FILES ${DXTex})
-
 set(stb_image
     "dependencies/stb/stb_image.h"
 )
@@ -234,7 +210,6 @@ set(ALL_FILES
     ${rapidjson__error}
     ${rapidjson__internal}
     ${rapidjson__msinttypes}
-    ${DXTex}
     ${stb_image}
 )
 
@@ -374,5 +349,3 @@ if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
     )
 endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE "${ADDITIONAL_LIBRARY_DEPENDENCIES}")
-target_link_libraries(${PROJECT_NAME} PRIVATE DirectXTex)
-

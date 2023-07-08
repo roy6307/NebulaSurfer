@@ -1,10 +1,8 @@
 #include "explorer.h"
-#include <iostream>
-#ifndef STB_IMAGE_IMPLEMENTATION
 
+#ifndef STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 #include "dependencies/stb/stb_image.h"
-
 #endif
 
 static ExplorerMain em;
@@ -52,7 +50,7 @@ void LoadAndCreateTexture(LPDIRECT3DDEVICE9 device, const char *fname)
 }
 
 // Load images and create textures.
-void Explorer::init(LPDIRECT3DDEVICE9 device)
+void NebulaSurfer::Explorer::init(LPDIRECT3DDEVICE9 device)
 {
 
     if (initialized == false)
@@ -76,7 +74,7 @@ void Explorer::init(LPDIRECT3DDEVICE9 device)
 
 void flistUpdate()
 {
-    em.flist.clear();
+    em.lflist.clear();
 
     for (const std::filesystem::directory_entry &entry : std::filesystem::directory_iterator(em.currentPath))
     {
@@ -102,18 +100,19 @@ void flistUpdate()
             tefi.ftype = ExplorerFileType::FOLDER;
         }
 
-        em.flist.push_back(tefi);
+        em.lflist.push_back(tefi);
     }
 }
 
-void Explorer::Local::Render(const char *title)
+void NebulaSurfer::Explorer::Local::Render(const char *title)
 {
     std::error_code ec;
     const std::filesystem::space_info si = std::filesystem::space("C:/", ec);
 
-    if(needFlistUpdate){
-    flistUpdate();
-    needFlistUpdate = false;
+    if (needFlistUpdate)
+    {
+        flistUpdate();
+        needFlistUpdate = false;
     }
 
     ImGui::SetNextWindowSize(ImVec2(825, 490));
@@ -126,7 +125,6 @@ void Explorer::Local::Render(const char *title)
 
             ImGui::SetCursorPos(ImVec2(60.5, 36.5));
             ImGui::Text("Time");
-
         }
 
         ImGui::EndChild();
@@ -144,7 +142,6 @@ void Explorer::Local::Render(const char *title)
             const char *items4[] = {"AAAA", "BBBB", "CCCC", "DDDD"};
             ImGui::ListBox("##RecentDir", &item_current4, items4, IM_ARRAYSIZE(items4));
             ImGui::PopItemWidth();
-
         }
 
         ImGui::EndChild();
@@ -162,14 +159,13 @@ void Explorer::Local::Render(const char *title)
                 em.currentPath = "C:\\";
                 needFlistUpdate = true;
             }
-
         }
         ImGui::EndChild();
 
         ImGui::SetCursorPos(ImVec2(220, 35));
         ImGui::BeginChild("TopBar", ImVec2(590, 84), true);
         {
-            //ImGui::SetCursorPos(ImVec2(15, 10));
+            // ImGui::SetCursorPos(ImVec2(15, 10));
             std::filesystem::path pbase;
 
             for (auto &splited : std::filesystem::path(em.currentPath))
@@ -218,12 +214,12 @@ void Explorer::Local::Render(const char *title)
 
             ImGui::SetCursorPos(ImVec2(370, 45));
             ImGui::PushItemWidth(200);
-            
+
             uintmax_t availSpa = si.available / (1 << 20); // MB
-            uintmax_t capaSpa = si.capacity / (1<<20); // MB
+            uintmax_t capaSpa = si.capacity / (1 << 20);   // MB
             uintmax_t subSpa = capaSpa - availSpa;
             double calcedSpa = (double)subSpa / (double)capaSpa;
-            //std::cout << calcedSpa <<std::endl;
+            // std::cout << calcedSpa <<std::endl;
             ImGui::ProgressBar(calcedSpa, ImVec2(0.0f, 0.0f)); // drive usage
             ImGui::PopItemWidth();
         }
@@ -233,26 +229,26 @@ void Explorer::Local::Render(const char *title)
         ImGui::BeginChild("##filelist", ImVec2(560, 339), true);
         {
 
-            for (int n = 0; n < em.flist.size(); n++)
+            for (int n = 0; n < em.lflist.size(); n++)
             {
                 ImGui::PushID(n);
                 if ((n % 5) != 0)
                     ImGui::SameLine();
 
-                int tttttt = em.flist.at(n).ftype;
+                int tttttt = em.lflist.at(n).ftype;
                 LPDIRECT3DTEXTURE9 ttex = textures.at(tttttt);
 
                 ImDrawList *draw_list = ImGui::GetWindowDrawList();
                 ImGuiWindow *window = ImGui::GetCurrentWindow();
                 ImVec2 bef = window->DC.CursorPos;
-                std::string tteexxtt = em.flist.at(n).path.filename().generic_u8string();
+                std::string tteexxtt = em.lflist.at(n).path.filename().generic_u8string();
                 float wid = ImGui::CalcTextSize(tteexxtt.c_str()).x;
 
                 if (ImGui::ImageButton((void *)ttex, ImVec2(84, 84)))
                 {
-                    if (em.flist.at(n).ftype == ExplorerFileType::FOLDER)
-                        em.currentPath = std::filesystem::canonical(em.flist.at(n).path).generic_u8string();
-                        needFlistUpdate = true;
+                    if (em.lflist.at(n).ftype == ExplorerFileType::FOLDER)
+                        em.currentPath = std::filesystem::canonical(em.lflist.at(n).path).generic_u8string();
+                    needFlistUpdate = true;
                 }
 
                 draw_list->AddText(ImVec2((2 * bef.x + 84.0f - wid) * 0.5f, bef.y + 73.5f), ImColor(1.0f, 1.0f, 1.0f, 1.0f), tteexxtt.c_str());
@@ -265,7 +261,7 @@ void Explorer::Local::Render(const char *title)
                     // Display preview (could be anything, e.g. when dragging an image we could decide to display
                     // the filename and a small preview of the image, etc.)
                     {
-                        ImGui::Text("Moving %s", em.flist.at(n).path.filename().generic_u8string().c_str());
+                        ImGui::Text("Moving %s", em.lflist.at(n).path.filename().generic_u8string().c_str());
                     }
                     ImGui::EndDragDropSource();
                 }
@@ -276,8 +272,8 @@ void Explorer::Local::Render(const char *title)
                         IM_ASSERT(payload->DataSize == sizeof(int));
                         int payload_n = *(const int *)payload->Data;
                         {
-                            em.flist.at(n) = em.flist.at(payload_n);
-                            em.flist.erase(em.flist.begin() + payload_n);
+                            em.lflist.at(n) = em.lflist.at(payload_n);
+                            em.lflist.erase(em.lflist.begin() + payload_n);
                         }
                     }
                     ImGui::EndDragDropTarget();
@@ -286,118 +282,40 @@ void Explorer::Local::Render(const char *title)
             }
         }
         ImGui::EndChild();
+    }
+    ImGui::End();
+}
 
-        /*ImGui::BeginChild("arrows", ImVec2(90, 40), false);
-        {
-            ImGui::Spacing();
-            ImGui::Spacing();
-            ImGui::ArrowButton("arLeft", ImGuiDir_Left);
+void NebulaSurfer::Explorer::Remote::Render(const char *title)
+{
 
-
-            ImGui::SameLine(0, 1 * ImGui::GetStyle().ItemSpacing.x);
-            ImGui::ArrowButton("arRight", ImGuiDir_Right);
-
-
-            ImGui::SameLine(0, 1 * ImGui::GetStyle().ItemSpacing.x);
-            ImGui::ArrowButton("arUp", ImGuiDir_Up);
-
-            ImGui::EndChild();
-        }
-
-        ImGui::SameLine(0, 1 * ImGui::GetStyle().ItemSpacing.x);
-        ImGui::BeginChild("splitedPaths", {-1, 40}, false);
+    ImGui::Begin(title);
+    {
+        std::vector<std::string> fns;
+        if (NebulaSurfer::Network::SFTP::List("/home/ubuntu/", &fns) == true)
         {
 
-            ImGui::Spacing();
-            ImGui::Spacing();
-
-            std::filesystem::path pbase;
-
-            for (auto &splited : std::filesystem::path(em.currentPath))
+            for (int n = 0; n < fns.size(); n++)
             {
-                pbase /= splited;
-                //pbase += "/";
-                if (splited.generic_u8string() != "C:")
-                {
-                    if (ImGui::Button((splited.generic_u8string()+"/").c_str(), {0, 0}))
-                    {
-                        // std::cout << "Hit" <<std::endl;
-                        std::cout << pbase << std::endl;
-                        em.currentPath = std::filesystem::absolute(pbase).generic_u8string(); // << std::endl;
-                        // std::cout << std::filesystem::canonical(splited).generic_u8string() << std::endl;
-                    }
-                }
-
-                ImGui::SameLine();
-            }
-
-            ImGui::EndChild();
-        }
-
-        // split(em.currentPath, '/')
-        ImGui::BeginChild("drives", {70, -1}, false);
-        {
-            if(ImGui::Button("C:/", {0, 0})){
-                em.currentPath = "C:\\";
-            }
-
-            ImGui::EndChild();
-        }
-
-        ImGui::SameLine(0, 1 * ImGui::GetStyle().ItemSpacing.x);
-        ImGui::BeginChild("filelist", {-1, -1}, false);
-        {
-
-            for (int n = 0; n < em.flist.size(); n++)
-            {
-                ImGui::PushID(n);
-                if ((n % 7) != 0)
+                if ((n % 5) != 0)
                     ImGui::SameLine();
 
-                int tttttt = em.flist.at(n).ftype;
-                LPDIRECT3DTEXTURE9 ttex = textures.at(tttttt);
+                LPDIRECT3DTEXTURE9 ttex = textures.at(1);
 
                 ImDrawList *draw_list = ImGui::GetWindowDrawList();
-                ImGuiWindow* window = ImGui::GetCurrentWindow();
+                ImGuiWindow *window = ImGui::GetCurrentWindow();
                 ImVec2 bef = window->DC.CursorPos;
-                std::string tteexxtt = em.flist.at(n).path.filename().generic_u8string();
-                float wid = ImGui::CalcTextSize(tteexxtt.c_str()).x;
+                const char* ftext = fns.at(n).c_str();
+                float wid = ImGui::CalcTextSize(ftext).x;
 
-                if(ImGui::ImageButton((void*)ttex, ImVec2(84,84))){
-                    if(em.flist.at(n).ftype == ExplorerFileType::FOLDER) em.currentPath = std::filesystem::canonical(em.flist.at(n).path).generic_u8string();
-                }
-
-                draw_list->AddText(ImVec2((2*bef.x+84.0f-wid)*0.5f, bef.y+73.5f), ImColor(1.0f,1.0f,1.0f,1.0f), tteexxtt.c_str());
-                // Our buttons are both drag sources and drag targets here!
-                if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+                if (ImGui::ImageButton((void *)ttex, ImVec2(84, 84)))
                 {
-                    // Set payload to carry the index of our item (could be anything)
-                    ImGui::SetDragDropPayload("flis", &n, sizeof(int));
+                    fprintf(stderr, "%s\n", ftext);
+                }
 
-                    // Display preview (could be anything, e.g. when dragging an image we could decide to display
-                    // the filename and a small preview of the image, etc.)
-                    { ImGui::Text("Moving %s", em.flist.at(n).path.filename().generic_u8string().c_str()); }
-                    ImGui::EndDragDropSource();
-                }
-                if (ImGui::BeginDragDropTarget())
-                {
-                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("flis"))
-                    {
-                        IM_ASSERT(payload->DataSize == sizeof(int));
-                        int payload_n = *(const int*)payload->Data;
-                        {
-                            em.flist.at(n) = em.flist.at(payload_n);
-                            em.flist.erase(em.flist.begin()+payload_n);
-                        }
-                    }
-                    ImGui::EndDragDropTarget();
-                }
-                ImGui::PopID();
+                draw_list->AddText(ImVec2((2 * bef.x + 84.0f - wid) * 0.5f, bef.y + 73.5f), ImColor(1.0f, 1.0f, 1.0f, 1.0f), ftext);
             }
-
-            ImGui::EndChild();
         }
-        ImGui::End();*/
     }
     ImGui::End();
 }

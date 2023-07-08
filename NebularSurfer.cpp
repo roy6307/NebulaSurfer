@@ -7,7 +7,7 @@ Base source from imgui\examples\example_win32_directx9\main.cpp
 #include <tchar.h>
 #include <Windows.h>
 
-#include "ssh.h"
+#include "network.h"
 #include "shell.h"
 #include "explorer.h"
 
@@ -30,7 +30,6 @@ void CleanupDeviceD3D();
 void ResetDevice();
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-SSH ssh;
 static int CurrentIdx = -1;
 static int cnt = 0;
 static int LogedIn = false;
@@ -76,15 +75,14 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdL
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
 	// ImGui::StyleColorsLight();
-
+	
 	// Setup Platform/Renderer backends
 	ImGui_ImplWin32_Init(hwnd);
 	ImGui_ImplDX9_Init(g_pd3dDevice);
 
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-	ssh.setCnfList();
-	Explorer::init(g_pd3dDevice);
+	NebulaSurfer::Explorer::init(g_pd3dDevice);
 
 	// Main loop
 	bool done = false;
@@ -129,7 +127,8 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdL
 			ImGui::EndMainMenuBar();
 		}
 
-		Explorer::Local::Render("Explorer");
+		NebulaSurfer::Explorer::Local::Render("Explorer");
+		NebulaSurfer::Explorer::Remote::Render("aaaaaaaa");
 
 		if (!LogedIn){
 			ImGui::Begin("Welcome");
@@ -139,60 +138,29 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdL
 		//ImU32
 		//ImColor
 		if(!LogedIn) {
-			static int RadioVal = 0;
+
+			static std::string hostaddr,username,password,pathToPem;
+			static int port;
 
 			ImGui::Begin("Main panel");
 			ImGui::Text("SSH config");
-			ImGui::InputText("Host address(ipv4)", &ssh.host);
-			ImGui::InputInt("Port", &ssh.port);
-			ImGui::InputText("Username", &ssh.username);
-			ImGui::InputText("Password", &ssh.password);
-			if(RadioVal == 1) ImGui::InputText("Path to pub key", &ssh.pathToPubKey);
-			if (RadioVal == 1) ImGui::InputText("Path to private Key", &ssh.pathToPrivKey);
-
-			ImGui::Text("Login option");
-
-			ImGui::SameLine();  ImGui::RadioButton("Use password", &RadioVal, 0);
-			ImGui::SameLine();  ImGui::RadioButton("Use *.pub and *.key", &RadioVal, 1);
+			ImGui::InputText("Host address(ipv4)", &hostaddr);
+			ImGui::InputInt("Port", &port);
+			ImGui::InputText("Username", &username);
+			ImGui::InputText("Password", &password);
+			ImGui::InputText("Path to *.pem key", &pathToPem);
 
 			if (ImGui::Button("Connect")) {
-				if(ssh.init_session(RadioVal)) LogedIn = true;
+				if(NebulaSurfer::Network::init(hostaddr.c_str(), port, username.c_str(), password.c_str(), pathToPem.c_str())) LogedIn = true;
 			}
 
-			ImGui::Separator();
-			ImGui::Text("Config");
-
-			if (ImGui::Button("Reload config.json")) {
-				ssh.setCnfList();
-			}
-
-			ImGui::SameLine();
-
-			if (ImGui::BeginListBox("ConfigListBox", ImVec2(-FLT_MIN, 5 * ImGui::GetTextLineHeightWithSpacing()))) {
-
-				cnt = 0;
-
-				std::vector<std::string>::iterator ListIterator;
-
-				for (ListIterator = ssh.cnfList.begin(); ListIterator != ssh.cnfList.end(); ListIterator++) {
-					const bool is_selected = (CurrentIdx == cnt);
-
-					if (ImGui::Selectable((*ListIterator).c_str(), is_selected)) {
-						ImGui::SetItemDefaultFocus();
-						CurrentIdx = cnt;
-						ssh.LoadCnf((*ListIterator).c_str());
-					}
-					cnt++;
-				}
-				ImGui::EndListBox();
-			}
 			ImGui::End();
 		}
 
 		if(LogedIn) {
-			SHELL::parseANSICodes(ssh.Read());
+			NebulaSurfer::SHELL::parseANSICodes(NebulaSurfer::Network::SSH::Read());
 			ImGui::Begin("SSH"); 
-			SHELL::Render("SSH", ssh.channel);
+			NebulaSurfer::SHELL::Render("SSH");
 			ImGui::End();
 		}
 
