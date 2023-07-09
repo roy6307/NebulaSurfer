@@ -179,7 +179,7 @@ void NebulaSurfer::Network::SFTP::Mkdir(const char *path)
                                   LIBSSH2_SFTP_S_IROTH | LIBSSH2_SFTP_S_IXOTH) != LIBSSH2_ERROR_EAGAIN);
 }
 
-bool NebulaSurfer::Network::SFTP::List(const char *path, std::vector<std::string>* fnames)
+bool NebulaSurfer::Network::SFTP::List(const char *path, std::vector<std::string>* fnames, std::vector<std::string>* fpaths, std::vector<unsigned long long>* fsizes, std::vector<bool>* isDir)
 {
 
     if(networkInitialized == false){
@@ -224,11 +224,17 @@ bool NebulaSurfer::Network::SFTP::List(const char *path, std::vector<std::string
             else {
                 printf("   -    - ");
             }
- 
+
             if(attrs.flags & LIBSSH2_SFTP_ATTR_SIZE) {
                 printf("%8I64u ", attrs.filesize);
             }*/
+            std::string temppath = path;
+            temppath += mem;
 
+            //fprintf(stderr, "%s %s\n", mem, LIBSSH2_SFTP_S_ISDIR(attrs.permissions)?"DIR":"FILE");
+            isDir->push_back(LIBSSH2_SFTP_S_ISDIR(attrs.permissions));
+            fpaths->push_back(temppath);
+            fsizes->push_back(attrs.filesize);
             fnames->push_back(mem);
 
         }

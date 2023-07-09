@@ -26,7 +26,8 @@ enum ExplorerFileType
 struct ExplorerFileInfo
 {
     unsigned long long size = 0;
-    std::filesystem::path path = ""; // use absolute path
+    std::string path = ""; // use absolute path
+    std::string filename = "";
     ExplorerFileType ftype;
 };
 
@@ -34,7 +35,9 @@ struct ExplorerMain
 {
     std::vector<ExplorerFileInfo> lflist; // for local
     std::vector<ExplorerFileInfo> rflist; // for remote
-    std::string currentPath = "/";
+    std::string currentLocalPath = "/";
+    std::string currentRemotePath = "/";
+    std::string previousRemotePath = "/";
 };
 
 namespace NebulaSurfer

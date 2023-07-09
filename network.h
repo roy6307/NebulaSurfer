@@ -30,7 +30,7 @@ namespace NebulaSurfer
             void Write();
             void Read();
             void Mkdir(const char* path);
-            bool List(const char* path, std::vector<std::string>* fnames);
+            bool List(const char *path, std::vector<std::string>* fnames, std::vector<std::string>* fpaths, std::vector<unsigned long long>* fsizes, std::vector<bool>* isDir);
 
         }
 
