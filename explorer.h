@@ -2,16 +2,42 @@
 
 #pragma once
 
-#include <vector>
-#include <string>
-#include <filesystem>
-#include <d3d9.h>
-#include <iostream>
+#ifndef NEBULASURFER_EXPLORER_H
+#define NEBULASURFER_EXPLORER_H
+#endif
 
+#ifndef IMGUI_VERSION
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
+#endif
 
+#ifndef NEBULASURFER_NETWORK_H
 #include "network.h"
+#endif
+
+#ifndef _VECTOR_
+#include <vector>
+#endif
+
+#ifndef _STRING_
+#include <string>
+#endif
+
+#ifndef _FILESYSTEM_
+#include <filesystem>
+#endif
+
+#ifndef _D3D9_H_
+#include <d3d9.h>
+#endif
+
+#ifndef _IOSTREAM_
+#include <iostream>
+#endif
+
+#ifndef _FUTURE_
+#include <future>
+#endif
 
 enum ExplorerFileType
 {

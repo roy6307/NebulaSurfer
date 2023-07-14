@@ -56,7 +56,7 @@ void NebulaSurfer::Explorer::init(LPDIRECT3DDEVICE9 device)
 
     if (initialized == false)
     {
-
+        // use va_args instead
         const char *image_folder = "./images/folder.png";
         const char *image_default = "./images/default.png";
         const char *image_picture = "./images/picture-1.png";
@@ -73,9 +73,9 @@ void NebulaSurfer::Explorer::init(LPDIRECT3DDEVICE9 device)
     }
 }
 
-//LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
+// LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
 //**********************   LOCAL PART   ****************************
-//LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
+// LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
 
 void localFlistUpdate()
 {
@@ -162,7 +162,7 @@ void NebulaSurfer::Explorer::Local::Render(const char *title)
             ImGui::SetCursorPos(ImVec2(50, 45));
             if (ImGui::Button("C:/", {0, 0}))
             {
-                em.currentLocalPath = "C:\\";
+                em.currentLocalPath = "/";
                 needLocalFlistUpdate = true;
             }
         }
@@ -184,7 +184,7 @@ void NebulaSurfer::Explorer::Local::Render(const char *title)
                     {
                         // std::cout << "Hit" <<std::endl;
                         std::cout << pbase << std::endl;
-                        em.currentLocalPath = std::filesystem::absolute(pbase).generic_u8string(); // << std::endl;
+                        em.currentLocalPath = std::filesystem::absolute(pbase).generic_u8string()+"/"; // << std::endl;
                         needLocalFlistUpdate = true;
                         // std::cout << std::filesystem::canonical(splited).generic_u8string() << std::endl;
                     }
@@ -253,7 +253,7 @@ void NebulaSurfer::Explorer::Local::Render(const char *title)
                 if (ImGui::ImageButton((void *)ttex, ImVec2(84, 84)))
                 {
                     if (em.lflist.at(n).ftype == ExplorerFileType::FOLDER)
-                        em.currentLocalPath = std::filesystem::canonical(em.lflist.at(n).path).generic_u8string();
+                        em.currentLocalPath = std::filesystem::canonical(em.lflist.at(n).path).generic_u8string()+"/";
                     needLocalFlistUpdate = true;
                 }
 
@@ -292,9 +292,9 @@ void NebulaSurfer::Explorer::Local::Render(const char *title)
     ImGui::End();
 }
 
-//RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+// RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 //**********************   REMOTE PART   ***************************
-//RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+// RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 
 bool remoteFlistUpdate()
 {
@@ -355,6 +355,8 @@ void NebulaSurfer::Explorer::Remote::Render(const char *title)
     ImGui::Begin(title);
     {
 
+        static uint64_t ddd = 0;
+
         for (int n = 0; n < em.rflist.size(); n++)
         {
             ImGui::PushID(n);
@@ -372,23 +374,26 @@ void NebulaSurfer::Explorer::Remote::Render(const char *title)
 
             if (ImGui::ImageButton((void *)ttex, ImVec2(84, 84)))
             {
-                //std::cout << "Hit\n";
+                // std::cout << "Hit\n";
                 if (em.rflist.at(n).ftype == ExplorerFileType::FOLDER && em.rflist.at(n).filename != ".")
                 {
-                    
 
                     if (em.rflist.at(n).filename == "..")
                     {
-                        em.currentRemotePath="/";
+                        em.currentRemotePath = "/";
                         needRemoteFlistUpdate = true;
                     }
                     else
                     {
                         em.previousRemotePath = em.currentRemotePath;
                         em.currentRemotePath += em.rflist.at(n).filename + "/";
-                        //std::cout << em.currentRemotePath << std::endl;
+                        // std::cout << em.currentRemotePath << std::endl;
                         needRemoteFlistUpdate = true;
                     }
+                }
+                else if (em.rflist.at(n).ftype != ExplorerFileType::FOLDER)
+                {
+                    std::future<bool> a = std::async(std::launch::async, NebulaSurfer::Network::SFTP::Download, em.rflist.at(n).path, em.currentLocalPath+em.rflist.at(n).filename);
                 }
             }
 

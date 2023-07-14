@@ -2,22 +2,41 @@
 Base source from imgui\examples\example_win32_directx9\main.cpp
 */
 
-#include <cstdlib>
-#include <d3d9.h>
-#include <tchar.h>
-#include <Windows.h>
-
-#include "network.h"
-#include "shell.h"
-#include "explorer.h"
-
+#ifndef IMGUI_VERSION
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_dx9.h"
 #include "imgui/imgui_impl_win32.h"
 #include "imgui/imgui_stdlib.h"
 #include "imgui/imgui_internal.h"
+#endif
 
+#ifndef __NEBULASURFER_NETWORK__
+#include "network.h"
+#endif
 
+#ifndef __NEBULASURFER_SHELL__
+#include "shell.h"
+#endif
+
+#ifndef __NEBULASURFER_EXPLORER__
+#include "explorer.h"
+#endif
+
+#ifndef _CSTDLIB_
+#include <cstdlib>
+#endif
+
+#ifndef _D3D9_H_
+#include <d3d9.h>
+#endif
+
+#ifndef _INC_TCHAR
+#include <tchar.h>
+#endif
+
+#ifndef _WINDOWS_
+#include <Windows.h>
+#endif
 
 // Data
 static LPDIRECT3D9 g_pD3D = NULL;
@@ -30,19 +49,15 @@ void CleanupDeviceD3D();
 void ResetDevice();
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-static int CurrentIdx = -1;
-static int cnt = 0;
-static int LogedIn = false;
-
 #ifdef _DEBUG
-int main(int argc, char* argv[])
+int main(int, char **)
 #else
 int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdLine, int nCmdShow)
 #endif
 {
 	// Create application window
 	// ImGui_ImplWin32_EnableDpiAwareness();
-	WNDCLASSEXW wc = { sizeof(wc), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, L"NebularSurfer", NULL };
+	WNDCLASSEXW wc = {sizeof(wc), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, L"NebularSurfer", NULL};
 	::RegisterClassExW(&wc);
 	HWND hwnd = ::CreateWindowW(wc.lpszClassName, L"NebularSurfer", WS_OVERLAPPEDWINDOW, 100, 100, 1280, 720, NULL, NULL, wc.hInstance, NULL);
 
@@ -61,31 +76,38 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdL
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
+	ImGuiIO &io = ImGui::GetIO();
 	(void)io;
 
-	ImVector<ImWchar> ranges;
-	ImFontGlyphRangesBuilder builder;
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
-	io.Fonts->AddFontFromFileTTF("fonts/NotoSansKR-Medium.otf", 16.0f, NULL, io.Fonts->GetGlyphRangesKorean());
-	//io.Fonts->AddFontFromFileTTF("fonts/NotoSansJP-Medium.otf", 16.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
-	//io.Fonts->AddFontFromFileTTF("fonts/NotoSansTC-Medium.otf", 16.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
-	//io.Fonts->Build();
+	// ImVector<ImWchar> ranges;
+	// ImFontGlyphRangesBuilder builder;
+
+	// io.Fonts->AddFontFromFileTTF("fonts/NotoSansKR-Medium.otf", 16.0f, NULL, io.Fonts->GetGlyphRangesKorean());
+	//  io.Fonts->AddFontFromFileTTF("fonts/NotoSansJP-Medium.otf", 16.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
+	//  io.Fonts->AddFontFromFileTTF("fonts/NotoSansTC-Medium.otf", 16.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+	//  io.Fonts->Build();
 
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
 	// ImGui::StyleColorsLight();
-	
+
 	// Setup Platform/Renderer backends
 	ImGui_ImplWin32_Init(hwnd);
 	ImGui_ImplDX9_Init(g_pd3dDevice);
 
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-	NebulaSurfer::Explorer::init(g_pd3dDevice);
+	// NebulaSurfer::Explorer::init(g_pd3dDevice);
 
 	// Main loop
 	bool done = false;
+
+	static bool LogedIn = false;
+	static bool showSSH = false;
+	static bool showSFTP = false;
+
 	while (!done)
 	{
 		// Poll and handle messages (inputs, window resize, etc.)
@@ -106,61 +128,130 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdL
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
 
-		if (ImGui::BeginMainMenuBar()) {
+		bool open = true;
 
-			if (ImGui::BeginMenu("New server explorer")) {
-				1 + 1;
+		ImGuiViewport *viewport = ImGui::GetMainViewport();
+		ImGui::SetNextWindowPos(viewport->Pos);
+		ImGui::SetNextWindowSize(viewport->Size);
 
-				ImGui::EndMenu();
+		// based on https://github.com/ocornut/imgui/issues/2109#issuecomment-430096134
+		/*
+		cases
+		1. clicked servers.  showSSH, showSFTP is false. show servers config window. use only one more dock
+		2. click server(nickname or host ip etc.) showSSH is true, show SFTP is false. use only one more dock
+		3. click SFTP. showSSH is false, show SFTP is true. use only two more dock. List | Local explorer | Remote explorer
+
+		Currently available List, Home, Remote, Local
+		*/
+		ImGui::Begin("MainDockSpace", &open, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoNavFocus);
+		if (ImGui::DockBuilderGetNode(ImGui::GetID("MyDockspace")) == NULL)
+		{
+			ImGuiID dockspace_id = ImGui::GetID("MyDockspace");
+			ImGui::DockBuilderRemoveNode(dockspace_id); // Clear out existing layout
+			ImGui::DockBuilderAddNode(dockspace_id);	// Add empty node
+
+			ImGuiID dock_main_id = dockspace_id; // This variable will track the document node, however we are not using it here as we aren't docking anything into it.
+			ImGuiID dock_id_left = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.20f, NULL, &dock_main_id);
+
+			ImGui::DockBuilderDockWindow("List", dock_id_left);
+
+			// when click "servers" button.
+			// if (showSSH == false && showSFTP == false)
+			{
+				ImGuiID dock_id_home = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.20f, NULL, &dock_main_id);
+				ImGui::DockBuilderDockWindow("Home", dock_id_home);
 			}
 
-			ImGui::Separator();
-
-			if (ImGui::BeginMenu("New local explorer")) {
-				1 + 1;
-
-				ImGui::EndMenu();
+			// when clicked server button.
+			// if (showSSH == true && showSFTP == false)
+			{
+				ImGuiID dock_id_ssh = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.20f, NULL, &dock_main_id);
+				ImGui::DockBuilderDockWindow("SSH", dock_id_ssh);
 			}
 
-			ImGui::Separator();
-
-			ImGui::EndMainMenuBar();
-		}
-
-		NebulaSurfer::Explorer::Local::Render("Explorer");
-		NebulaSurfer::Explorer::Remote::Render("aaaaaaaa");
-
-		if (!LogedIn){
-			ImGui::Begin("Welcome");
-			ImGui::Text("A open-source free ssh client for Windows.\nYou can review the codes on https://github.com/roy6307/NebulaSurfer");
-			ImGui::End();
-		}
-		//ImU32
-		//ImColor
-		if(!LogedIn) {
-
-			static std::string hostaddr,username,password,pathToPem;
-			static int port;
-
-			ImGui::Begin("Main panel");
-			ImGui::Text("SSH config");
-			ImGui::InputText("Host address(ipv4)", &hostaddr);
-			ImGui::InputInt("Port", &port);
-			ImGui::InputText("Username", &username);
-			ImGui::InputText("Password", &password);
-			ImGui::InputText("Path to *.pem key", &pathToPem);
-
-			if (ImGui::Button("Connect")) {
-				if(NebulaSurfer::Network::init(hostaddr.c_str(), port, username.c_str(), password.c_str(), pathToPem.c_str())) LogedIn = true;
+			// when clicked sftp button.
+			// if (showSSH == false && showSFTP == true)
+			{
+				ImGuiID dock_id_expRemote = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.20f, NULL, &dock_main_id);
+				ImGuiID dock_id_expLocal = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.20f, NULL, &dock_main_id);
+				ImGui::DockBuilderDockWindow("Remote", dock_id_expRemote);
+				ImGui::DockBuilderDockWindow("Local", dock_id_expLocal);
 			}
 
-			ImGui::End();
+			ImGui::DockBuilderFinish(dockspace_id);
 		}
 
-		if(LogedIn) {
+		ImGuiID dockspace_id = ImGui::GetID("MyDockspace");
+		ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_NoDockingInCentralNode);
+		ImGui::End();
+
+		if (LogedIn == true)
 			NebulaSurfer::SHELL::parseANSICodes(NebulaSurfer::Network::SSH::Read());
-			ImGui::Begin("SSH"); 
-			NebulaSurfer::SHELL::Render("SSH");
+
+		{ // Dock: List
+			ImGui::Begin("List", &open, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoNavFocus);
+
+			if (ImGui::Button("Servers"))
+			{
+				showSFTP = false;
+				showSSH = false;
+			}
+
+			if (ImGui::Button("SFTP") && LogedIn)
+			{
+				showSFTP = true;
+				showSSH = false;
+			}
+
+			ImGui::Separator();
+
+			// use image button with Text(server nickname or like ubuntu@127.0.0.1:22)
+			// need server index. and edit network.cpp.
+			if (ImGui::Button("Ubuntu")) // SSH
+			{
+				showSSH = true;
+				showSFTP = false;
+			}
+
+			ImGui::End();
+		}
+
+		{											 // Dock: SSH
+			if (LogedIn == false && showSSH == true) // show config window if not logedin
+			{
+
+				static std::string hostaddr, username, password, pathToPem;
+				static int port;
+
+				ImGui::Begin("SSH", &open, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoNavFocus);
+				ImGui::Text("SSH config");
+				ImGui::InputText("Host address(ipv4)", &hostaddr);
+				ImGui::InputInt("Port", &port);
+				ImGui::InputText("Username", &username);
+				ImGui::InputText("Password", &password);
+				ImGui::InputText("Path to *.pem key", &pathToPem);
+
+				if (ImGui::Button("Connect"))
+				{
+					if (NebulaSurfer::Network::init(hostaddr.c_str(), port, username.c_str(), password.c_str(), pathToPem.c_str()))
+						LogedIn = true;
+				}
+
+				ImGui::End();
+			}
+			else if (LogedIn == true && showSSH == true) // show shell if logedin
+			{
+				ImGui::Begin("SSH", &open, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoNavFocus);
+				NebulaSurfer::SHELL::Render("SSH");
+				ImGui::End();
+			}
+		}
+
+		if (showSSH == false && showSFTP == false)
+		{
+			// will be placed hosts that not connected.
+			ImGui::Begin("Home", &open, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoNavFocus);
+			ImGui::Text("Home");
 			ImGui::End();
 		}
 

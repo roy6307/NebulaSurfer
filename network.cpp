@@ -209,25 +209,7 @@ bool NebulaSurfer::Network::SFTP::List(const char *path, std::vector<std::string
         while((rc = libssh2_sftp_readdir(sftp_handle, mem, sizeof(mem), &attrs)) == LIBSSH2_ERROR_EAGAIN);
 
         if(rc > 0) {
-            /* rc is the length of the file name in the mem buffer */ 
- 
-            /*if(attrs.flags & LIBSSH2_SFTP_ATTR_PERMISSIONS) {
-                printf("--fix----- ");
-            }
-            else {
-                printf("---------- ");
-            }
- 
-            if(attrs.flags & LIBSSH2_SFTP_ATTR_UIDGID) {
-                printf("%4d %4d ", (int) attrs.uid, (int) attrs.gid);
-            }
-            else {
-                printf("   -    - ");
-            }
 
-            if(attrs.flags & LIBSSH2_SFTP_ATTR_SIZE) {
-                printf("%8I64u ", attrs.filesize);
-            }*/
             std::string temppath = path;
             temppath += mem;
 
@@ -248,5 +230,58 @@ bool NebulaSurfer::Network::SFTP::List(const char *path, std::vector<std::string
  
     } while(1);
 
+    libssh2_sftp_closedir(sftp_handle);
+
     return true;
+}
+
+// read src file from server and save to dst path
+bool NebulaSurfer::Network::SFTP::Download(std::string src, std::string dst){
+
+LIBSSH2_SFTP_HANDLE *sftp_handle;
+
+std::cout << "src: " << src << std::endl << "dst: " << dst << std::endl;
+
+
+do {
+
+        sftp_handle = libssh2_sftp_open(sftp_session, src.c_str(), LIBSSH2_FXF_READ, 0);
+
+        if((!sftp_handle) && (libssh2_session_last_errno(session) != LIBSSH2_ERROR_EAGAIN)) {
+            fprintf(stderr, "Unable to open dir with SFTP\n");
+            return false;
+        }
+
+    } while(!sftp_handle);
+
+    std::ofstream out(dst, std::ios::app);
+ 
+    fprintf(stderr, "libssh2_sftp_open() is done, now receive data!\n");
+
+    do {
+        char mem[1024 * 24];
+        ssize_t nread;
+
+        /* loop until we fail */
+        while((nread = libssh2_sftp_read(sftp_handle, mem, sizeof(mem))) == LIBSSH2_ERROR_EAGAIN);
+
+        if(nread > 0) {
+            //fprintf(stderr, "Read: %lld\n", nread);
+            out.write(mem, nread);
+        }
+        else {
+            break;
+        }
+    } while(1);
+
+    out.close();
+
+    fprintf(stderr, "Done!\n");
+
+    return true;
+}
+
+// read src file and upload to server
+bool NebulaSurfer::Network::SFTP::Upload(std::string src, std::string dst){
+return false;
 }

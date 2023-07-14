@@ -1,18 +1,45 @@
 #pragma once
 
+#ifndef NEBULASURFER_SHELL_H
+#define NEBULASURFER_SHELL_H
+#endif
+
+#ifndef IMGUI_VERSION
 #include "imgui/imgui.h"
 #include "imgui/imgui_stdlib.h"
+#endif
 
+#ifndef LIBSSH2_H
 #include "libssh2/include/libssh2.h"
+#endif
 
+#ifndef NEBULASURFER_NETWORK_H
 #include "network.h"
+#endif
 
-#include <string>
+#ifndef _VECTOR_
 #include <vector>
+#endif
+
+#ifndef _STRING_
+#include <string>
+#endif
+
+#ifndef _REGEX_
 #include <regex>
+#endif
+
+#ifndef _UTILITY_
 #include <utility>
+#endif
+
+#ifndef _IOSTREAM_
 #include <iostream>
+#endif
+
+#ifndef _SSTREAM_
 #include <sstream>
+#endif
 
 #define ESC '\033'
 
